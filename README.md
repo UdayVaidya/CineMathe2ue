@@ -16,6 +16,8 @@
 
 ## ✨ Features
 
+- **More about Project:** https://udayvaidya.github.io/CineMathe2ue/
+
 - **User Authentication:** Secure JWT-based Login and Registration.
 - **Movie Discovery:** Fetch latest & trending movies directly from TMDB API.
 - **Sleek UI/UX:** A visually striking "brutalist" design language with dark mode, red accents, and smooth animations.
