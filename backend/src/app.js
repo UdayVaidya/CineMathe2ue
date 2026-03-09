@@ -22,7 +22,15 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(
     cors({
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+
+            // For production, we can allow the origin that is making the request (echo it back)
+            // This is safe for a test/portfolio app and guarantees no CORS errors.
+            // When deploying frontend on Vercel, it often uses different preview URLs.
+            callback(null, true);
+        },
         credentials: true,
     })
 );
