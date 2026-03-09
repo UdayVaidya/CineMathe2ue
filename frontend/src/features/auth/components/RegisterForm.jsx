@@ -66,7 +66,7 @@ const RegisterForm = () => {
             <button
                 type="submit"
                 disabled={loading}
-                className="mt-6 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-[#f4f3ed] font-mono text-xs tracking-[0.2em] font-bold uppercase transition-colors rounded-none disabled:opacity-50"
+                className="mt-6 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-white font-mono text-xs tracking-[0.2em] font-bold uppercase transition-all duration-300 rounded-none hover:shadow-[0_0_12px_rgba(230,57,70,0.7)] disabled:opacity-50"
             >
                 {loading ? "Account ban raha hai..." : "Access Authorization"}
             </button>

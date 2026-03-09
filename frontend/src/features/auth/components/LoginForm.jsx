@@ -69,9 +69,10 @@ const LoginForm = () => {
 
             <button
                 type="submit"
-                className="mt-6 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-white font-mono text-xs tracking-[0.2em] font-bold uppercase transition-colors rounded-none"
+                disabled={loading}
+                className="mt-6 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-white font-mono text-xs tracking-[0.2em] font-bold uppercase transition-all duration-300 rounded-none hover:shadow-[0_0_18px_rgba(230,57,70,0.75)] disabled:opacity-50"
             >
-                Authorize Access
+                {loading ? "Authorizing..." : "Authorize Access"}
             </button>
         </motion.form>
     );

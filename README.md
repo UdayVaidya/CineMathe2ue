@@ -110,13 +110,13 @@ cd CineMathe2ue
 
 ---
 
-## 🔑 Default Admin Account
+## 🔑 Admin Credentials (For Testing)
 
-To test admin features immediately, a seed script can be run on the backend to create an admin user:
+You can use the following pre-configured admin credentials to access the Admin Panel and test administrative features:
 
-| Email            | Password           | Role    |
-| :--------------- | :----------------- | :------ |
-| `admin@test.com` | `adminpassword123` | `Admin` |
+| Username | Email            | Password           | Role    |
+| :------- | :--------------- | :----------------- | :------ |
+| `admin`  | `admin@test.com` | `adminpassword123` | `Admin` |
 
 ---
 
