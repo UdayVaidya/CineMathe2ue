@@ -1,7 +1,7 @@
 // useDebounce — delays value update until user stops typing
 import { useState, useEffect } from 'react';
 
-const useDebounce = (value, delay = 500) => {
+const useDebounce = (value, delay = 300) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
 
     useEffect(() => {

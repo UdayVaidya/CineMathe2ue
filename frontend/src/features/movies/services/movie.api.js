@@ -24,18 +24,88 @@ export const getPopularTVShows = async () => {
   return res.data.results
 }
 
-export const getMovieDetails = async (id) => {
-  const res = await tmdbClient.get(`/movie/${id}`, {
-    params: { append_to_response: "videos,credits" }
+// TMDB genre list
+export const getMovieGenres = async () => {
+  const res = await tmdbClient.get("/genre/movie/list", {
+    params: { language: "en-US" }
   })
-  console.log("✅ Movie Details:", res.data)
+  return res.data.genres
+}
+
+export const getTVGenres = async () => {
+  const res = await tmdbClient.get("/genre/tv/list", {
+    params: { language: "en-US" }
+  })
+  return res.data.genres
+}
+
+// Paginated discover — supports genre, rating, sort_by, page, mediaType
+export const discoverMedia = async ({ mediaType = 'movie', page = 1, genreId = null, minRating = 0, sortBy = 'popularity.desc' } = {}) => {
+  const endpoint = mediaType === 'tv' ? '/discover/tv' : '/discover/movie'
+  const params = {
+    language: 'en-US',
+    page,
+    sort_by: sortBy,
+    'vote_average.gte': minRating,
+    'vote_count.gte': 50,
+  }
+  if (genreId) params.with_genres = genreId
+  const res = await tmdbClient.get(endpoint, { params })
+  return { results: res.data.results, totalPages: res.data.total_pages, page: res.data.page }
+}
+
+export const getMovieDetails = async (id) => {
+  const [details, credits, videos] = await Promise.all([
+    tmdbClient.get(`/movie/${id}`),
+    tmdbClient.get(`/movie/${id}/credits`),
+    tmdbClient.get(`/movie/${id}/videos`),
+  ])
+  return {
+    ...details.data,
+    credits: credits.data,
+    videos: videos.data,
+  }
+}
+
+export const getMovieBasic = async (id) => {
+  const res = await tmdbClient.get(`/movie/${id}`)
   return res.data
 }
 
+export const getMovieCredits = async (id) => {
+  const res = await tmdbClient.get(`/movie/${id}/credits`)
+  return res.data
+}
+
+export const getMovieVideos = async (id) => {
+  const res = await tmdbClient.get(`/movie/${id}/videos`)
+  return res.data
+}
 
 export const getTVShowDetails = async (id) => {
-  const res = await tmdbClient.get(`/tv/${id}`, {
-    params: { append_to_response: "videos,credits" }
-  })
+  const [details, credits, videos] = await Promise.all([
+    tmdbClient.get(`/tv/${id}`),
+    tmdbClient.get(`/tv/${id}/credits`),
+    tmdbClient.get(`/tv/${id}/videos`),
+  ])
+  return {
+    ...details.data,
+    credits: credits.data,
+    videos: videos.data,
+  }
+}
+
+export const getTVBasic = async (id) => {
+  const res = await tmdbClient.get(`/tv/${id}`)
+  return res.data
+}
+
+export const getTVCredits = async (id) => {
+  const res = await tmdbClient.get(`/tv/${id}/credits`)
+  return res.data
+}
+
+export const getTVVideos = async (id) => {
+  const res = await tmdbClient.get(`/tv/${id}/videos`)
   return res.data
 }

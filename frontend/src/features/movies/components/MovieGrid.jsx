@@ -1,17 +1,19 @@
+import { memo } from "react"
 import MovieCard from "./MovieCard"
 
-export default function MovieGrid({ movies }) {
-
+function MovieGrid({ movies }) {
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 md:gap-12 w-full">
-
-            {movies.map((movie) => (
+        <div className="movie-grid">
+            {movies.map((movie, i) => (
                 <MovieCard
                     key={movie.id}
                     movie={movie}
+                    index={i}
                 />
             ))}
-
         </div>
     )
 }
+
+// Only re-render when movies array reference changes
+export default memo(MovieGrid)

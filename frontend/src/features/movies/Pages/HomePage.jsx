@@ -1,87 +1,153 @@
 import useTrendingMovies from "../hooks/useTrendingMovies"
 import usePopularMovies from "../hooks/usePopularMovies"
+import useTVShows from "../hooks/useTVShows"
+import useInfiniteDiscover from "../hooks/useInfiniteDiscover"
 import MovieGrid from "../components/MovieGrid"
+import FeaturedCarousel from "../components/FeaturedCarousel"
 import HeroArchive from "../components/HeroArchive"
+import FilterBar from "../components/FilterBar"
+import { SkeletonGrid } from "../components/SkeletonCard"
 import { useDispatch } from "react-redux"
+import { fetchGenres } from "../store/movieSlice"
 import { logout } from "../../auth/store/authSlice"
 import { useNavigate } from "react-router-dom"
-import useTVShows from "../hooks/useTVShows"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import tmdbClient from "../../../shared/api/tmdbClient"
+
+// ── Detect why TMDB failed
+async function diagnoseTMDB() {
+    try {
+        const res = await tmdbClient.get("/__ping", { timeout: 5000 })
+        if (res.data?.reachable === false) return "isp_block"
+        return "ok"
+    } catch (e) {
+        const code = e.response?.data?.code
+        if (code === "NO_KEY") return "no_key"
+        if (code === "NETWORK_ERROR") return "isp_block"
+        return "server_down"
+    }
+}
+
+function SectionHeader({ title, subtitle, count }) {
+    return (
+        <div className="section-header">
+            <div>
+                <h2 className="section-header__title">{title}</h2>
+                <p className="section-header__sub">{subtitle}</p>
+            </div>
+            <span className="section-header__count">[{count} RECORDS]</span>
+        </div>
+    )
+}
+
+function ScrollSentinel({ sentinelRef, appending, hasMore }) {
+    return (
+        <div ref={sentinelRef} className="scroll-sentinel">
+            {appending && (
+                <div className="scroll-sentinel__loader">
+                    <div className="scroll-sentinel__spinner" />
+                    <span>Loading more...</span>
+                </div>
+            )}
+            {!hasMore && !appending && (
+                <div className="scroll-sentinel__end">
+                    <span>— END OF RESULTS —</span>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function TMDBErrorBanner({ diagnosis, onRetry }) {
+    const msgs = {
+        isp_block: { icon: "⚡", text: "TMDB is blocked on your network. Use a VPN or change DNS to 1.1.1.1", fixes: ["VPN: Cloudflare WARP / ProtonVPN", "DNS: Set 1.1.1.1 or 8.8.8.8", "Hotspot: Try Airtel/BSNL"] },
+        no_key: { icon: "🔑", text: "TMDB API key missing in backend .env", fixes: ["Add VITE_TMDB_API_KEY_READ_ACCESS to backend/.env", "Restart backend server"] },
+        server_down: { icon: "🔌", text: "Backend server is not responding", fixes: ["Run: npm run dev (in /backend)", "Check port 4000 is free"] },
+        unknown: { icon: "⚠", text: "Unable to connect to TMDB", fixes: [] },
+    }
+    const m = msgs[diagnosis] || msgs.unknown
+    return (
+        <div className="tmdb-error-banner">
+            <div className="tmdb-error-banner__icon">{m.icon}</div>
+            <div className="tmdb-error-banner__body">
+                <p className="tmdb-error-banner__text">{m.text}</p>
+                {m.fixes.length > 0 && (
+                    <ul className="tmdb-error-banner__fixes">
+                        {m.fixes.map((f, i) => <li key={i}>{f}</li>)}
+                    </ul>
+                )}
+            </div>
+            <button className="tmdb-error-banner__retry" onClick={onRetry}>Retry ↺</button>
+        </div>
+    )
+}
 
 export default function HomePage() {
     const { trending, loading: trendingLoading, error: trendingError } = useTrendingMovies()
     const { popular, loading: popularLoading } = usePopularMovies()
+    const { tvShows } = useTVShows()
     const dispatch = useDispatch()
     const navigate = useNavigate()
-    const { tvShows } = useTVShows()
-    const [timedOut, setTimedOut] = useState(false)
+    const [activeSection, setActiveSection] = useState("trending")
+    const [diagnosis, setDiagnosis] = useState(null)
+    const [diagnosing, setDiagnosing] = useState(false)
 
-    const loading = trendingLoading || popularLoading
+    const {
+        movies: browseMovies,
+        loading: browseLoading,
+        appending,
+        hasMore,
+        filters,
+        genres,
+        updateFilters,
+        sentinelRef,
+    } = useInfiniteDiscover()
 
-    // Agar 10 seconds mein TMDB se response na aaye toh timeout
+    const isLoading = trendingLoading || popularLoading
+
+    useEffect(() => { dispatch(fetchGenres()) }, [dispatch])
+
     useEffect(() => {
-        if (!loading) return
-        const timer = setTimeout(() => setTimedOut(true), 10000)
-        return () => clearTimeout(timer)
-    }, [loading])
+        if (!trendingError || diagnosing || diagnosis) return
+        setDiagnosing(true)
+        diagnoseTMDB().then(result => { setDiagnosis(result); setDiagnosing(false) })
+    }, [trendingError])
 
-    if (loading && timedOut) {
+    const handleRetry = useCallback(() => {
+        setDiagnosis(null)
+        window.location.reload()
+    }, [])
+
+    if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#0a0a0a] flex flex-col gap-4 items-center justify-center font-mono text-[#f4f3ed] p-8">
-                <h2 className="text-2xl text-[#e63946] uppercase font-bold tracking-widest">CONNECTION FAILED</h2>
-                <p className="text-[#999] text-sm text-center max-w-md">
-                    TMDB server tak nahi pahunch paye. Aapka ISP (Jio etc.) is domain ko block kar sakta hai.
-                </p>
-                <div className="bg-[#111] border border-[#333] p-4 text-xs font-mono text-[#ccc] max-w-md w-full space-y-2">
-                    <p className="text-[#e63946] font-bold mb-2">FIX:</p>
-                    <p>1. VPN chalao (Cloudflare WARP ya ProtonVPN)</p>
-                    <p>2. Ya Airtel/BSNL hotspot use karo</p>
-                    <p>3. DNS change karo: 1.1.1.1 ya 8.8.8.8</p>
+            <div className="init-screen">
+                <div className="init-screen__blob" />
+                <div className="init-screen__spinner" />
+                <span className="init-screen__text">INITIALIZING ARCHIVE...</span>
+                <div className="init-screen__bar"><div className="init-screen__bar-fill" /></div>
+            </div>
+        )
+    }
+
+    if (trendingError || !trending?.length) {
+        return (
+            <div className="homepage">
+                <div className="homepage__toolbar">
+                    <button onClick={() => navigate('/search')} className="toolbar-btn toolbar-btn--search">SEARCH</button>
+                    <button onClick={() => dispatch(logout())} className="toolbar-btn toolbar-btn--danger">Log Out</button>
                 </div>
-                <button
-                    onClick={() => { setTimedOut(false); window.location.reload() }}
-                    className="border border-[#666] px-6 py-2 text-xs tracking-widest hover:border-[#f4f3ed] transition-colors uppercase"
-                >
-                    Retry
-                </button>
-                <button
-                    onClick={() => dispatch(logout())}
-                    className="text-[#e63946] text-xs tracking-widest underline underline-offset-4"
-                >
-                    Log Out
-                </button>
-            </div>
-        )
-    }
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center font-mono text-[#f4f3ed] gap-4">
-                <div className="w-8 h-8 border-2 border-[#e63946] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm tracking-widest text-[#666] uppercase">Initializing Archive...</span>
-            </div>
-        )
-    }
-
-    if (trendingError) {
-        return (
-            <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center font-mono text-[#f4f3ed] p-8">
-                <h2 className="text-3xl text-[#e63946] mb-4 uppercase font-bold">Protocol Error</h2>
-                <p className="text-red-400 max-w-lg text-center bg-[#141414] p-4 border border-red-900 border-dashed">{JSON.stringify(trendingError)}</p>
-                <button
-                    onClick={() => dispatch(logout())}
-                    className="mt-8 border border-[#333] px-4 py-2 text-xs tracking-widest hover:border-[#f4f3ed] transition-colors"
-                >
-                    Abort & Log Out
-                </button>
-            </div>
-        )
-    }
-
-    if (!trending || trending.length === 0) {
-        return (
-            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center font-mono text-[#e63946]">
-                NO ARCHIVES FOUND
+                <div className="error-full">
+                    <div className="error-full__icon">⊘</div>
+                    <h2 className="error-full__title">CONNECTION FAILED</h2>
+                    <p className="error-full__sub">
+                        {diagnosing ? "Diagnosing network issue..." : "Could not reach TMDB."}
+                    </p>
+                    {diagnosis && <TMDBErrorBanner diagnosis={diagnosis} onRetry={handleRetry} />}
+                    <div className="error-full__actions">
+                        <button className="error-screen__retry" onClick={handleRetry}>Retry Connection ↺</button>
+                        <button className="error-screen__logout" onClick={() => dispatch(logout())}>Log Out</button>
+                    </div>
+                </div>
             </div>
         )
     }
@@ -90,71 +156,85 @@ export default function HomePage() {
     const otherMovies = trending.slice(1)
 
     return (
-        <>
-        <div className="min-h-screen bg-[#0a0a0a] text-[#f4f3ed] font-sans overflow-x-hidden relative">
-
-            {/* Global Actions */}
-            <div className="absolute z-50 top-8 right-8 flex gap-4">
-                <button
-                    onClick={() => navigate('/search')}
-                    className="border border-red-500 text-red-500  px-4 py-2 hover:bg-[#f4f3ed] hover:text-[#0a0a0a] transition-all text-md  font-extrabold tracking-widest uppercase"
-                >
+        <div className="homepage">
+            {/* Nav Toolbar */}
+            <div className="homepage__toolbar">
+                <button onClick={() => navigate('/search')} className="toolbar-btn toolbar-btn--search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ width: 14, height: 14 }}>
+                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
                     SEARCH
                 </button>
-                <button
-                    onClick={() => navigate('/tmdb')}
-                    className="border border-[#3b82f6] text-[#3b82f6] px-4 py-2 hover:bg-[#3b82f6] hover:text-[#0a0a0a] transition-all text-xs font-mono tracking-widest uppercase"
-                >
-                    TMDB APIs
-                </button>
-                <button
-                    onClick={() => dispatch(logout())}
-                    className="border border-[#e63946] text-[#e63946] px-4 py-2 hover:bg-[#e63946] hover:text-[#0a0a0a] transition-all text-xs font-mono tracking-widest uppercase"
-                >
-                    Log Out
-                </button>
+                <button onClick={() => navigate('/favorites')} className="toolbar-btn">FAVORITES</button>
+                <button onClick={() => dispatch(logout())} className="toolbar-btn toolbar-btn--danger">Log Out</button>
             </div>
 
-            {/* Hero Section */}
+            {/* Hero */}
             <HeroArchive movie={featuredMovie} />
 
-            {/* Trending Section */}
-            <div className="px-8 md:px-16 lg:px-24 py-16">
-                <div className="flex justify-between items-end mb-12 border-b border-[#333] pb-4">
-                    <div>
-                        <h2 className="text-3xl font-serif tracking-tight text-[#eaeaea]">TRENDING NOW</h2>
-                        <p className="font-mono text-xs tracking-widest text-[#666] mt-2 uppercase">Global Data Feed</p>
-                    </div>
-                    <span className="font-mono text-[10px] tracking-widest text-[#e63946]">[{otherMovies.length} RECORDS]</span>
-                </div>
-                <MovieGrid movies={otherMovies} />
+            {/* ── FEATURED CAROUSEL — mixed movies + TV, auto-scrolling */}
+            <FeaturedCarousel movies={otherMovies} tvShows={tvShows} interval={3500} />
+
+            {/* Section Tabs */}
+            <div className="section-tabs">
+                <button
+                    className={`section-tab ${activeSection === "trending" ? "section-tab--active" : ""}`}
+                    onClick={() => setActiveSection("trending")}
+                >
+                    TRENDING &amp; POPULAR
+                </button>
+                <button
+                    className={`section-tab ${activeSection === "browse" ? "section-tab--active" : ""}`}
+                    onClick={() => setActiveSection("browse")}
+                >
+                    BROWSE &amp; FILTER
+                    <span className="section-tab__badge">NEW</span>
+                </button>
             </div>
 
-            {/* Popular Section */}
-            <div className="px-8 md:px-16 lg:px-24 py-16 border-t border-[#1a1a1a]">
-                <div className="flex justify-between items-end mb-12 border-b border-[#333] pb-4">
-                    <div>
-                        <h2 className="text-3xl font-serif tracking-tight text-[#eaeaea]">POPULAR MOVIES</h2>
-                        <p className="font-mono text-xs tracking-widest text-[#666] mt-2 uppercase">Most Watched</p>
+            {/* ── TRENDING — grid layout */}
+            {activeSection === "trending" && (
+                <div className="homepage__sections animate-fade-in">
+                    <div className="content-section">
+                        <SectionHeader title="TRENDING NOW" subtitle="Global Data Feed" count={otherMovies.length} />
+                        <MovieGrid movies={otherMovies} />
                     </div>
-                    <span className="font-mono text-[10px] tracking-widest text-[#e63946]">[{popular.length} RECORDS]</span>
-                </div>
-                <MovieGrid movies={popular} />
-            </div>
-
-            {/* TV Shows Section */}
-            <div className="px-8 md:px-16 lg:px-24 py-16 border-t border-[#1a1a1a]">
-                <div className="flex justify-between items-end mb-12 border-b border-[#333] pb-4">
-                    <div>
-                        <h2 className="text-3xl font-serif tracking-tight text-[#eaeaea]">POPULAR TV SHOWS</h2>
-                        <p className="font-mono text-xs tracking-widest text-[#666] mt-2 uppercase">Top Series</p>
+                    <div className="content-section">
+                        <SectionHeader title="POPULAR MOVIES" subtitle="Most Watched" count={popular.length} />
+                        <MovieGrid movies={popular} />
                     </div>
-                    <span className="font-mono text-[10px] tracking-widest text-[#e63946]">[{tvShows.length} RECORDS]</span>
+                    <div className="content-section">
+                        <SectionHeader title="POPULAR TV SHOWS" subtitle="Top Series" count={tvShows.length} />
+                        <MovieGrid movies={tvShows} />
+                    </div>
                 </div>
-                <MovieGrid movies={tvShows} />
-            </div>
+            )}
 
+            {/* ── BROWSE / INFINITE SCROLL */}
+            {activeSection === "browse" && (
+                <div className="homepage__sections animate-fade-in">
+                    <div className="content-section">
+                        <FilterBar genres={genres} filters={filters} onFilterChange={updateFilters} />
+                        {browseLoading ? (
+                            <SkeletonGrid count={10} />
+                        ) : browseMovies.length === 0 ? (
+                            <div className="browse-empty">
+                                <span>⊘</span>
+                                <p>No results found. Try changing filters.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <MovieGrid movies={browseMovies} />
+                                <ScrollSentinel
+                                    sentinelRef={sentinelRef}
+                                    appending={appending}
+                                    hasMore={hasMore}
+                                />
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
-        </>
     )
 }

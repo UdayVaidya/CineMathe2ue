@@ -69,7 +69,7 @@ const LoginForm = () => {
 
             <button
                 type="submit"
-                className="mt-6 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-[#f4f3ed] font-mono text-xs tracking-[0.2em] font-bold uppercase transition-colors rounded-none"
+                className="mt-6 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-white font-mono text-xs tracking-[0.2em] font-bold uppercase transition-colors rounded-none"
             >
                 Authorize Access
             </button>
