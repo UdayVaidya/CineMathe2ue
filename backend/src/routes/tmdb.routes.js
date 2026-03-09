@@ -13,7 +13,7 @@ const getTmdbToken = () => {
 };
 
 // Catch all requests to /api/tmdb/*
-router.all('/*', async (req, res) => {
+router.use('/', async (req, res) => {
     try {
         const tmdbToken = getTmdbToken();
         if (!tmdbToken) {
