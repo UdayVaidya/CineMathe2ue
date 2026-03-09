@@ -9,6 +9,7 @@ import { swaggerSpec } from './config/swagger.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import tmdbRoutes from './routes/tmdb.routes.js';
 
 // Error handler
 import errorHandler from './middlewares/error.middleware.js';
@@ -44,6 +45,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tmdb', tmdbRoutes); // Proxy for TMDB to bypass Jio block
 
 // ─── API Documentation ───────────────────────────────────────────────────────
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

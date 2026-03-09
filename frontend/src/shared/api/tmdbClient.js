@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 const tmdbClient = axios.create({
-    baseURL: import.meta.env.VITE_TMDB_BASE_URL || 'https://api.themoviedb.org/3',
+    // Send all TMDB requests to our backend proxy instead of TMDB directly
+    baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/tmdb`,
     headers: {
         accept: 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_TMDB_API_KEY_READ_ACCESS}`
     }
 });
 
