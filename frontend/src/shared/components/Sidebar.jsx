@@ -32,7 +32,7 @@ export default function Sidebar() {
                         `group flex flex-col items-center justify-center transition-all cursor-pointer ${isActive ? 'text-[#e63946]' : 'hover:text-[#f4f3ed]'}`
                     }
                 >
-                    <div className="md:rotate-[-90deg] whitespace-nowrap tracking-[0.2em] text-[10px] md:text-xs font-mono uppercase font-bold">
+                    <div className="md:rotate-[-90deg] whitespace-nowrap tracking-[0.2em] text-[10px] md:text-xs font-mono uppercase font-bold hover:text-red-500 transition-colors ">
                         Search
                     </div>
                 </NavLink>
@@ -43,7 +43,7 @@ export default function Sidebar() {
                         `group flex flex-col items-center justify-center transition-all cursor-pointer ${isActive ? 'text-[#e63946]' : 'hover:text-[#f4f3ed]'}`
                     }
                 >
-                    <div className="md:rotate-[-90deg] whitespace-nowrap tracking-[0.2em] text-[10px] md:text-xs font-mono uppercase font-bold">
+                    <div className="md:rotate-[-90deg] whitespace-nowrap tracking-[0.2em] text-[10px] md:text-xs font-mono uppercase font-bold hover:text-red-500 transition-colors ">
                         Mood Scanner
                     </div>
                 </NavLink>
@@ -54,7 +54,7 @@ export default function Sidebar() {
                         `group flex flex-col items-center justify-center transition-all cursor-pointer ${isActive ? 'text-[#e63946]' : 'hover:text-[#f4f3ed]'}`
                     }
                 >
-                    <div className="md:rotate-[-90deg] whitespace-nowrap tracking-[0.2em] text-[10px] md:text-xs font-mono uppercase font-bold">
+                    <div className="md:rotate-[-90deg] whitespace-nowrap tracking-[0.2em] text-[10px] md:text-xs font-mono uppercase font-bold hover:text-red-500 transition-colors ">
                         Favorites
                     </div>
                 </NavLink>

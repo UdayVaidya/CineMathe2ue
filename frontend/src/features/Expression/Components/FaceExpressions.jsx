@@ -13,11 +13,18 @@ export default function FaceExpression({ onMoodChange }) {
     useEffect(() => {
         let isRunning = true;
 
-        const loop = () => {
+        const loop = (timestamp) => {
             if (!isRunning) return;
-            const mood = detect(landmarkerRef, videoRef);
-            if (mood) {
-                setLiveMood(mood);
+            try {
+                if (videoRef.current && videoRef.current.paused) {
+                    videoRef.current.play().catch(() => { });
+                }
+                const mood = detect(landmarkerRef, videoRef, timestamp);
+                if (mood) {
+                    setLiveMood(mood);
+                }
+            } catch (e) {
+                // Ignore transient frame errors on tab switch
             }
             animationRef.current = requestAnimationFrame(loop);
         };
@@ -35,10 +42,26 @@ export default function FaceExpression({ onMoodChange }) {
             }
         };
 
-        setup();
+        // We no longer call setup() here. It will be called by handleStartCamera.
+        window.__startCamera = setup;
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && isRunning && isReady) {
+                if (videoRef.current && videoRef.current.paused) {
+                    videoRef.current.play().catch(() => { });
+                }
+                const track = streamRef.current?.getTracks()[0];
+                // If track was killed by OS when tab was in background, re-init.
+                if (track && track.readyState === 'ended') {
+                    setup();
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             isRunning = false;
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
             if (landmarkerRef.current) landmarkerRef.current.close();
             if (videoRef.current?.srcObject) {
@@ -55,20 +78,41 @@ export default function FaceExpression({ onMoodChange }) {
 
     return (
         <div style={{ textAlign: "center", width: "100%", maxWidth: "450px" }}>
-            <video
-                ref={videoRef}
-                style={{
-                    width: "100%",
-                    height: "auto",
-                    borderRadius: "0px", // Brutalist UI has no rounded corners
-                    marginBottom: "15px",
-                    backgroundColor: "#000",
-                    border: "2px solid var(--border-color)", // Stronger border
-                    transform: "scaleX(-1)" // Mirror the camera so it looks natural
-                }}
-                playsInline
-                muted
-            />
+            <div style={{
+                width: "100%",
+                height: "auto",
+                aspectRatio: "4/3",
+                backgroundColor: "#0a0a0a",
+                border: "2px solid var(--border-color)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+                overflow: "hidden"
+            }}>
+                {!isReady && (
+                    <button
+                        onClick={() => window.__startCamera?.()}
+                        className="toolbar-btn"
+                        style={{ position: "absolute", zIndex: 10, padding: "12px 24px", color: "var(--clr-danger)", borderColor: "var(--clr-danger)" }}
+                    >
+                        [ START CAMERA ]
+                    </button>
+                )}
+                <video
+                    ref={videoRef}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        backgroundColor: "#000",
+                        transform: "scaleX(-1)", // Mirror the camera so it looks natural
+                        opacity: isReady ? 1 : 0.5
+                    }}
+                    playsInline
+                    muted
+                />
+            </div>
             <div style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "14px",
@@ -77,6 +121,7 @@ export default function FaceExpression({ onMoodChange }) {
                 letterSpacing: "2px",
                 height: "20px",
                 marginBottom: "20px",
+                marginTop: "20px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

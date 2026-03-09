@@ -33,12 +33,12 @@ export const init = async ({ landmarkerRef, videoRef, streamRef }) => {
     });
 };
 
-export const detect = (landmarkerRef, videoRef) => {
+export const detect = (landmarkerRef, videoRef, timestamp = performance.now()) => {
     if (!landmarkerRef.current || !videoRef.current || videoRef.current.readyState < 2) return null;
 
     const results = landmarkerRef.current.detectForVideo(
         videoRef.current,
-        performance.now()
+        timestamp
     );
 
     if (results.faceBlendshapes?.length > 0) {

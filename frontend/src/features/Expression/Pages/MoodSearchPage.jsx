@@ -47,6 +47,10 @@ export default function MoodSearchPage() {
 
     return (
         <div className="homepage" style={{ minHeight: '100vh', padding: '20px' }}>
+            <div className="homepage__toolbar" style={{ marginBottom: '20px' }}>
+                <button onClick={() => navigate('/home')} className="toolbar-btn">← BACK TO HOME</button>
+            </div>
+
             <div style={{ textAlign: "center", marginBottom: "40px", paddingTop: "20px" }}>
                 <h1 className="section-title">MOOD SCANNER</h1>
                 <p style={{ color: "var(--muted-color)", marginBottom: "30px", fontFamily: "var(--font-mono)", fontSize: "0.8rem", letterSpacing: "2px" }}>
