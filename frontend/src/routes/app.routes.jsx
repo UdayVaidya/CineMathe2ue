@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { useDispatch } from "react-redux"
 import useAuth from "../features/auth/hooks/useAuth"
 import { fetchFavorites } from "../features/favorites/store/favoritesSlice"
+import Sidebar from "../shared/components/Sidebar"
 
 // ── Eager load auth (tiny, always needed on first paint)
 import AuthForm from "../features/auth/Pages/AuthForm"
@@ -14,6 +15,7 @@ const MoviesDetailPage = lazy(() => import("../features/movies/Pages/MoviesDetai
 const SearchPage = lazy(() => import("../features/search/Pages/SearchPage"))
 const AdminDashboard = lazy(() => import("../features/admin/Pages/AdminDashboard"))
 const FavoritesPage = lazy(() => import("../features/favorites/Pages/FavoritesPage"))
+const MoodSearchPage = lazy(() => import("../features/Expression/Pages/MoodSearchPage"))
 
 // Minimal fallback — avoids flash of unstyled content
 function PageShell() {
@@ -48,16 +50,20 @@ const AppRoutes = () => {
 
     return (
         <Suspense fallback={<PageShell />}>
-            <Routes>
-                <Route path="/" element={!user ? <AuthForm /> : <Navigate to={homeRedirect} />} />
-                <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" />} />
-                <Route path="/tmdb" element={user ? <TmdbDashboard /> : <Navigate to="/" />} />
-                <Route path="/search" element={user ? <SearchPage /> : <Navigate to="/" />} />
-                <Route path="/movie/:id" element={user ? <MoviesDetailPage /> : <Navigate to="/" />} />
-                <Route path="/tv/:id" element={user ? <MoviesDetailPage /> : <Navigate to="/" />} />
-                <Route path="/favorites" element={user ? <FavoritesPage /> : <Navigate to="/" />} />
-                <Route path="/admin" element={user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
-            </Routes>
+            {user && <Sidebar />}
+            <div className={user ? "page-content" : ""}>
+                <Routes>
+                    <Route path="/" element={!user ? <AuthForm /> : <Navigate to={homeRedirect} />} />
+                    <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" />} />
+                    <Route path="/tmdb" element={user ? <TmdbDashboard /> : <Navigate to="/" />} />
+                    <Route path="/search" element={user ? <SearchPage /> : <Navigate to="/" />} />
+                    <Route path="/movie/:id" element={user ? <MoviesDetailPage /> : <Navigate to="/" />} />
+                    <Route path="/tv/:id" element={user ? <MoviesDetailPage /> : <Navigate to="/" />} />
+                    <Route path="/favorites" element={user ? <FavoritesPage /> : <Navigate to="/" />} />
+                    <Route path="/mood" element={user ? <MoodSearchPage /> : <Navigate to="/" />} />
+                    <Route path="/admin" element={user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
+                </Routes>
+            </div>
         </Suspense>
     )
 }

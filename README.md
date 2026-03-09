@@ -23,7 +23,8 @@
 - **Sleek UI/UX:** A visually striking "brutalist" design language with dark mode, red accents, and smooth animations.
 - **Favorites & Watchlist:** Users can add movies to their personal favorites and manage their watchlist.
 - **Admin Roles:** Role-based access control (Admin & User).
-- **Responsive Layout:** Optimized for both desktop and mobile viewing.
+- **Mood Scanner (AI):** Uses device camera to detect the user's facial expression using `@mediapipe/tasks-vision`, locking onto a target emotion and instantly suggesting perfect movies based on advanced dual-genre combinations.
+- **Responsive Layout:** Fully optimized for mobile, tablet, and desktop viewing with advanced fluid grids.
 
 ---
 
