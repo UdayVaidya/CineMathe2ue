@@ -1,7 +1,7 @@
 {
-  "name": "cinescope_backend",
+  "name": "cinematheque_backend",
   "version": "1.0.0",
-  "description": "CineScope – Full Stack Movie Discovery Platform",
+  "description": "CineMathèque – Full Stack Movie Discovery Platform",
   "license": "ISC",
   "author": "Uday Vaidya",
   "type": "module",

@@ -90,6 +90,7 @@ export default function HomePage() {
     const otherMovies = trending.slice(1)
 
     return (
+        <>
         <div className="min-h-screen bg-[#0a0a0a] text-[#f4f3ed] font-sans overflow-x-hidden relative">
 
             {/* Global Actions */}
@@ -154,5 +155,6 @@ export default function HomePage() {
             </div>
 
         </div>
+        </>
     )
 }

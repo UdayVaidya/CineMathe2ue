@@ -3,9 +3,9 @@ import swaggerJSDoc from 'swagger-jsdoc';
 const swaggerDefinition = {
     openapi: '3.0.0',
     info: {
-        title: 'CineScope API Documentation',
+        title: 'CineMathèque API Documentation',
         version: '1.0.0',
-        description: 'REST API documentation for the CineScope backend.',
+        description: 'REST API documentation for the CineMathèque backend.',
         contact: {
             name: 'API Support',
         },

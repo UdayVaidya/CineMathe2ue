@@ -1,492 +1,2256 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CineScope – Project Dashboard</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #080808; --surface: #0f0f0f; --border: #1f1f1f; --border2: #2a2a2a;
-    --text: #e8e8e0; --muted: #555; --muted2: #888;
-    --red: #e63946; --blue: #3b82f6; --green: #10b981; --amber: #f59e0b; --purple: #8b5cf6;
-  }
-  html { scroll-behavior: smooth; }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
-  .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; overflow-y: auto; }
-  .sidebar-logo { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); }
-  .sidebar-logo .name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.5px; }
-  .sidebar-logo .tag { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--red); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
-  .sidebar-nav { padding: 16px 0; flex: 1; }
-  .nav-section-label { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; padding: 12px 20px 6px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; cursor: pointer; transition: all 0.15s; font-size: 13px; color: var(--muted2); border-left: 2px solid transparent; }
-  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-  .nav-item.active { color: var(--red); border-left-color: var(--red); background: rgba(230,57,70,0.05); }
-  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-  .main { margin-left: 220px; padding: 40px 48px; max-width: calc(100% - 220px); }
-  .page { display: none; }
-  .page.active { display: block; }
-  .page-header { margin-bottom: 40px; }
-  .page-title { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 900; letter-spacing: -1px; color: var(--text); line-height: 1; }
-  .page-sub { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
-  .card { background: var(--surface); border: 1px solid var(--border); padding: 24px; margin-bottom: 20px; }
-  .card-title { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted2); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 20px; position: relative; overflow: hidden; }
-  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent, var(--red)); }
-  .stat-label { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-  .stat-val { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--accent, var(--red)); line-height: 1; }
-  .stat-desc { font-size: 11px; color: var(--muted2); margin-top: 4px; }
-  .progress-wrap { margin-bottom: 14px; }
-  .progress-label { display: flex; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted2); margin-bottom: 6px; }
-  .progress-track { height: 4px; background: var(--border2); overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--bar-color, var(--red)); transition: width 1s cubic-bezier(.4,0,.2,1); width: 0; }
-  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .feature-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid var(--border); background: var(--bg); transition: border-color 0.2s; }
-  .feature-item:hover { border-color: var(--border2); }
-  .feature-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 2px; }
-  .icon-done { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
-  .icon-partial { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
-  .icon-todo { background: rgba(85,85,85,0.1); color: var(--muted); border: 1px solid var(--border); }
-  .feature-text .feat-title { font-size: 13px; font-weight: 500; color: var(--text); }
-  .feature-text .feat-desc { font-size: 11px; color: var(--muted2); margin-top: 2px; line-height: 1.4; }
-  .feat-badge { display: inline-block; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 2px 6px; border: 1px solid; margin-top: 4px; text-transform: uppercase; }
-  .badge-done { color: var(--green); border-color: rgba(16,185,129,0.4); }
-  .badge-partial { color: var(--amber); border-color: rgba(245,158,11,0.4); }
-  .badge-todo { color: var(--muted); border-color: var(--border2); }
-  .arch-row { display: flex; gap: 16px; margin-bottom: 16px; }
-  .arch-box { flex: 1; border: 1px solid var(--border); padding: 20px; }
-  .arch-layer { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-  .arch-items { display: flex; flex-wrap: wrap; gap: 8px; }
-  .arch-chip { font-family: 'Space Mono', monospace; font-size: 10px; padding: 4px 10px; border: 1px solid var(--border2); color: var(--muted2); background: var(--bg); }
-  .arch-chip.highlight { border-color: var(--chip-color, var(--red)); color: var(--chip-color, var(--red)); }
-  .file-tree { font-family: 'Space Mono', monospace; font-size: 11px; }
-  .tree-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; color: var(--muted2); border-bottom: 1px solid var(--border); }
-  .tree-item:last-child { border-bottom: none; }
-  .tree-indent-1 { padding-left: 16px; } .tree-indent-2 { padding-left: 32px; }
-  .tree-icon { font-size: 10px; width: 14px; }
-  .tree-name { flex: 1; }
-  .tree-status { font-size: 9px; padding: 1px 6px; border: 1px solid; letter-spacing: 1px; }
-  .ts-done { color: var(--green); border-color: rgba(16,185,129,0.3); }
-  .ts-partial { color: var(--amber); border-color: rgba(245,158,11,0.3); }
-  .ts-empty { color: var(--muted); border-color: var(--border2); }
-  .routes-table { width: 100%; border-collapse: collapse; }
-  .routes-table th { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border2); }
-  .routes-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted2); vertical-align: middle; }
-  .routes-table tr:last-child td { border-bottom: none; }
-  .routes-table tr:hover td { background: rgba(255,255,255,0.02); }
-  .method-badge { font-family: 'Space Mono', monospace; font-size: 9px; padding: 2px 7px; border: 1px solid; letter-spacing: 1px; display: inline-block; }
-  .m-get { color: var(--green); border-color: rgba(16,185,129,0.4); }
-  .m-post { color: var(--blue); border-color: rgba(59,130,246,0.4); }
-  .m-put { color: var(--purple); border-color: rgba(139,92,246,0.4); }
-  .m-delete { color: var(--red); border-color: rgba(230,57,70,0.4); }
-  .route-path { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text); }
-  .route-auth { font-size: 9px; font-family: 'Space Mono', monospace; padding: 2px 6px; border: 1px solid; letter-spacing: 1px; }
-  .auth-private { color: var(--amber); border-color: rgba(245,158,11,0.3); }
-  .auth-public { color: var(--muted); border-color: var(--border2); }
-  .auth-admin { color: var(--red); border-color: rgba(230,57,70,0.3); }
-  .issue-list { display: flex; flex-direction: column; gap: 10px; }
-  .issue-item { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border: 1px solid var(--border); background: var(--bg); border-left: 3px solid var(--issue-color, var(--border)); }
-  .issue-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-  .issue-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-  .issue-desc { font-size: 11px; color: var(--muted2); line-height: 1.5; }
-  .issue-tag { display: inline-block; font-family: 'Space Mono', monospace; font-size: 8px; padding: 2px 6px; border: 1px solid var(--border2); color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
-  .severity-critical { --issue-color: var(--red); }
-  .severity-warn { --issue-color: var(--amber); }
-  .severity-info { --issue-color: var(--blue); }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .redux-map { display: flex; flex-direction: column; gap: 10px; }
-  .redux-slice { border: 1px solid var(--border); overflow: hidden; }
-  .redux-slice-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); }
-  .slice-name { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text); }
-  .slice-status { font-size: 10px; color: var(--green); }
-  .redux-slice-body { padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px; }
-  .state-field { font-family: 'Space Mono', monospace; font-size: 10px; padding: 4px 10px; border: 1px solid var(--border2); color: var(--muted2); background: var(--bg); }
-  .state-key { color: var(--blue); }
-  .state-val { color: var(--muted); }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-  @media (max-width: 900px) {
-    .sidebar { width: 180px; } .main { margin-left: 180px; padding: 24px; max-width: calc(100% - 180px); }
-    .stats-row { grid-template-columns: 1fr 1fr; } .feature-grid { grid-template-columns: 1fr; } .two-col { grid-template-columns: 1fr; }
-  }
-</style>
-</head>
-<body>
-
-<nav class="sidebar">
-  <div class="sidebar-logo">
-    <div class="name">CineScope</div>
-    <div class="tag">Project Dashboard</div>
-  </div>
-  <div class="sidebar-nav">
-    <div class="nav-section-label">Overview</div>
-    <div class="nav-item active" onclick="showPage('overview', this)"><span class="nav-dot"></span> Project Status</div>
-    <div class="nav-item" onclick="showPage('features', this)"><span class="nav-dot"></span> Features</div>
-    <div class="nav-section-label">Frontend</div>
-    <div class="nav-item" onclick="showPage('structure', this)"><span class="nav-dot"></span> File Structure</div>
-    <div class="nav-item" onclick="showPage('redux', this)"><span class="nav-dot"></span> Redux Store</div>
-    <div class="nav-item" onclick="showPage('pages', this)"><span class="nav-dot"></span> Pages & Routes</div>
-    <div class="nav-section-label">Backend</div>
-    <div class="nav-item" onclick="showPage('api', this)"><span class="nav-dot"></span> API Routes</div>
-    <div class="nav-item" onclick="showPage('models', this)"><span class="nav-dot"></span> Data Models</div>
-    <div class="nav-section-label">Next Steps</div>
-    <div class="nav-item" onclick="showPage('issues', this)"><span class="nav-dot"></span> Issues & TODOs</div>
-    <div class="nav-item" onclick="showPage('bonus', this)"><span class="nav-dot"></span> Bonus Features</div>
-  </div>
-</nav>
-
-<main class="main">
-
-  <!-- OVERVIEW -->
-  <div class="page active" id="page-overview">
-    <div class="page-header">
-      <div class="page-title">Project Status</div>
-      <div class="page-sub">CineScope — Full Stack Movie Discovery Platform</div>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card" style="--accent:var(--green)"><div class="stat-label">Completion</div><div class="stat-val">~72%</div><div class="stat-desc">Core features built</div></div>
-      <div class="stat-card" style="--accent:var(--blue)"><div class="stat-label">Frontend Files</div><div class="stat-val">25+</div><div class="stat-desc">Components, pages, hooks</div></div>
-      <div class="stat-card" style="--accent:var(--amber)"><div class="stat-label">Backend Routes</div><div class="stat-val">16</div><div class="stat-desc">Auth + User + Admin</div></div>
-      <div class="stat-card" style="--accent:var(--purple)"><div class="stat-label">Bonus Left</div><div class="stat-val">5</div><div class="stat-desc">Optional enhancements</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Feature Completion</div>
-      <div class="progress-wrap"><div class="progress-label"><span>Authentication (JWT + Redux)</span><span style="color:var(--green)">100%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--green)" data-w="100"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>TMDB Movie Data Integration</span><span style="color:var(--green)">100%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--green)" data-w="100"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Real-Time Search + Debouncing</span><span style="color:var(--green)">100%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--green)" data-w="100"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Movie Detail + Trailer Modal</span><span style="color:var(--green)">100%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--green)" data-w="100"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Admin Dashboard (CRUD)</span><span style="color:var(--green)">95%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--green)" data-w="95"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Backend API (Auth + User + Admin)</span><span style="color:var(--green)">90%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--green)" data-w="90"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Favorites Feature (UI side)</span><span style="color:var(--amber)">60%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--amber)" data-w="60"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Watch History (UI side)</span><span style="color:var(--amber)">50%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--amber)" data-w="50"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Infinite Scroll</span><span style="color:var(--amber)">40%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--amber)" data-w="40"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Loader / Skeleton UI</span><span style="color:var(--amber)">55%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--amber)" data-w="55"></div></div></div>
-      <div class="progress-wrap"><div class="progress-label"><span>Bonus Features</span><span style="color:var(--muted)">0%</span></div><div class="progress-track"><div class="progress-fill" style="--bar-color:var(--muted)" data-w="0"></div></div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Tech Stack</div>
-      <div class="arch-row">
-        <div class="arch-box"><div class="arch-layer">Frontend</div><div class="arch-items"><span class="arch-chip highlight" style="--chip-color:var(--blue)">React 19</span><span class="arch-chip highlight" style="--chip-color:var(--blue)">Redux Toolkit</span><span class="arch-chip highlight" style="--chip-color:var(--blue)">React Router v7</span><span class="arch-chip highlight" style="--chip-color:var(--blue)">Tailwind CSS 4</span><span class="arch-chip highlight" style="--chip-color:var(--blue)">Axios</span><span class="arch-chip highlight" style="--chip-color:var(--blue)">Framer Motion</span><span class="arch-chip highlight" style="--chip-color:var(--blue)">GSAP</span><span class="arch-chip highlight" style="--chip-color:var(--blue)">Vite</span></div></div>
-        <div class="arch-box"><div class="arch-layer">Backend</div><div class="arch-items"><span class="arch-chip highlight" style="--chip-color:var(--green)">Node.js</span><span class="arch-chip highlight" style="--chip-color:var(--green)">Express 5</span><span class="arch-chip highlight" style="--chip-color:var(--green)">MongoDB</span><span class="arch-chip highlight" style="--chip-color:var(--green)">Mongoose</span><span class="arch-chip highlight" style="--chip-color:var(--green)">JWT</span><span class="arch-chip highlight" style="--chip-color:var(--green)">bcryptjs</span><span class="arch-chip highlight" style="--chip-color:var(--green)">Swagger UI</span></div></div>
-        <div class="arch-box"><div class="arch-layer">External APIs</div><div class="arch-items"><span class="arch-chip highlight" style="--chip-color:var(--red)">TMDB API</span><span class="arch-chip highlight" style="--chip-color:var(--red)">YouTube Embeds</span></div></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMathèque – Project Dashboard</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap");
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #080808;
+        --surface: #0f0f0f;
+        --border: #1f1f1f;
+        --border2: #2a2a2a;
+        --text: #e8e8e0;
+        --muted: #555;
+        --muted2: #888;
+        --red: #e63946;
+        --blue: #3b82f6;
+        --green: #10b981;
+        --amber: #f59e0b;
+        --purple: #8b5cf6;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 220px;
+        height: 100vh;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        z-index: 100;
+        overflow-y: auto;
+      }
+      .sidebar-logo {
+        padding: 24px 20px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .sidebar-logo .name {
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        font-weight: 900;
+        color: var(--text);
+        letter-spacing: -0.5px;
+      }
+      .sidebar-logo .tag {
+        font-family: "Space Mono", monospace;
+        font-size: 8px;
+        color: var(--red);
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+      .sidebar-nav {
+        padding: 16px 0;
+        flex: 1;
+      }
+      .nav-section-label {
+        font-family: "Space Mono", monospace;
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: var(--muted);
+        text-transform: uppercase;
+        padding: 12px 20px 6px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 20px;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 13px;
+        color: var(--muted2);
+        border-left: 2px solid transparent;
+      }
+      .nav-item:hover {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .nav-item.active {
+        color: var(--red);
+        border-left-color: var(--red);
+        background: rgba(230, 57, 70, 0.05);
+      }
+      .nav-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+      }
+      .main {
+        margin-left: 220px;
+        padding: 40px 48px;
+        max-width: calc(100% - 220px);
+      }
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+      .page-header {
+        margin-bottom: 40px;
+      }
+      .page-title {
+        font-family: "Playfair Display", serif;
+        font-size: 36px;
+        font-weight: 900;
+        letter-spacing: -1px;
+        color: var(--text);
+        line-height: 1;
+      }
+      .page-sub {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin-top: 8px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .card-title {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--muted2);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card-title::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--accent, var(--red));
+      }
+      .stat-label {
+        font-family: "Space Mono", monospace;
+        font-size: 8px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .stat-val {
+        font-family: "Playfair Display", serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--accent, var(--red));
+        line-height: 1;
+      }
+      .stat-desc {
+        font-size: 11px;
+        color: var(--muted2);
+        margin-top: 4px;
+      }
+      .progress-wrap {
+        margin-bottom: 14px;
+      }
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        color: var(--muted2);
+        margin-bottom: 6px;
+      }
+      .progress-track {
+        height: 4px;
+        background: var(--border2);
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--bar-color, var(--red));
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 0;
+      }
+      .feature-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        transition: border-color 0.2s;
+      }
+      .feature-item:hover {
+        border-color: var(--border2);
+      }
+      .feature-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .icon-done {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+      .icon-partial {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--amber);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+      .icon-todo {
+        background: rgba(85, 85, 85, 0.1);
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+      .feature-text .feat-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .feature-text .feat-desc {
+        font-size: 11px;
+        color: var(--muted2);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+      .feat-badge {
+        display: inline-block;
+        font-family: "Space Mono", monospace;
+        font-size: 8px;
+        letter-spacing: 1px;
+        padding: 2px 6px;
+        border: 1px solid;
+        margin-top: 4px;
+        text-transform: uppercase;
+      }
+      .badge-done {
+        color: var(--green);
+        border-color: rgba(16, 185, 129, 0.4);
+      }
+      .badge-partial {
+        color: var(--amber);
+        border-color: rgba(245, 158, 11, 0.4);
+      }
+      .badge-todo {
+        color: var(--muted);
+        border-color: var(--border2);
+      }
+      .arch-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .arch-box {
+        flex: 1;
+        border: 1px solid var(--border);
+        padding: 20px;
+      }
+      .arch-layer {
+        font-family: "Space Mono", monospace;
+        font-size: 8px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+      .arch-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .arch-chip {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        padding: 4px 10px;
+        border: 1px solid var(--border2);
+        color: var(--muted2);
+        background: var(--bg);
+      }
+      .arch-chip.highlight {
+        border-color: var(--chip-color, var(--red));
+        color: var(--chip-color, var(--red));
+      }
+      .file-tree {
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+      }
+      .tree-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 0;
+        color: var(--muted2);
+        border-bottom: 1px solid var(--border);
+      }
+      .tree-item:last-child {
+        border-bottom: none;
+      }
+      .tree-indent-1 {
+        padding-left: 16px;
+      }
+      .tree-indent-2 {
+        padding-left: 32px;
+      }
+      .tree-icon {
+        font-size: 10px;
+        width: 14px;
+      }
+      .tree-name {
+        flex: 1;
+      }
+      .tree-status {
+        font-size: 9px;
+        padding: 1px 6px;
+        border: 1px solid;
+        letter-spacing: 1px;
+      }
+      .ts-done {
+        color: var(--green);
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+      .ts-partial {
+        color: var(--amber);
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+      .ts-empty {
+        color: var(--muted);
+        border-color: var(--border2);
+      }
+      .routes-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .routes-table th {
+        font-family: "Space Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border2);
+      }
+      .routes-table td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted2);
+        vertical-align: middle;
+      }
+      .routes-table tr:last-child td {
+        border-bottom: none;
+      }
+      .routes-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .method-badge {
+        font-family: "Space Mono", monospace;
+        font-size: 9px;
+        padding: 2px 7px;
+        border: 1px solid;
+        letter-spacing: 1px;
+        display: inline-block;
+      }
+      .m-get {
+        color: var(--green);
+        border-color: rgba(16, 185, 129, 0.4);
+      }
+      .m-post {
+        color: var(--blue);
+        border-color: rgba(59, 130, 246, 0.4);
+      }
+      .m-put {
+        color: var(--purple);
+        border-color: rgba(139, 92, 246, 0.4);
+      }
+      .m-delete {
+        color: var(--red);
+        border-color: rgba(230, 57, 70, 0.4);
+      }
+      .route-path {
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        color: var(--text);
+      }
+      .route-auth {
+        font-size: 9px;
+        font-family: "Space Mono", monospace;
+        padding: 2px 6px;
+        border: 1px solid;
+        letter-spacing: 1px;
+      }
+      .auth-private {
+        color: var(--amber);
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+      .auth-public {
+        color: var(--muted);
+        border-color: var(--border2);
+      }
+      .auth-admin {
+        color: var(--red);
+        border-color: rgba(230, 57, 70, 0.3);
+      }
+      .issue-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .issue-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        border-left: 3px solid var(--issue-color, var(--border));
+      }
+      .issue-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .issue-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+      .issue-desc {
+        font-size: 11px;
+        color: var(--muted2);
+        line-height: 1.5;
+      }
+      .issue-tag {
+        display: inline-block;
+        font-family: "Space Mono", monospace;
+        font-size: 8px;
+        padding: 2px 6px;
+        border: 1px solid var(--border2);
+        color: var(--muted);
+        margin-top: 4px;
+        letter-spacing: 1px;
+      }
+      .severity-critical {
+        --issue-color: var(--red);
+      }
+      .severity-warn {
+        --issue-color: var(--amber);
+      }
+      .severity-info {
+        --issue-color: var(--blue);
+      }
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .redux-map {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .redux-slice {
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .redux-slice-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid var(--border);
+      }
+      .slice-name {
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        color: var(--text);
+      }
+      .slice-status {
+        font-size: 10px;
+        color: var(--green);
+      }
+      .redux-slice-body {
+        padding: 12px 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .state-field {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        padding: 4px 10px;
+        border: 1px solid var(--border2);
+        color: var(--muted2);
+        background: var(--bg);
+      }
+      .state-key {
+        color: var(--blue);
+      }
+      .state-val {
+        color: var(--muted);
+      }
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border2);
+        border-radius: 2px;
+      }
+      @media (max-width: 900px) {
+        .sidebar {
+          width: 180px;
+        }
+        .main {
+          margin-left: 180px;
+          padding: 24px;
+          max-width: calc(100% - 180px);
+        }
+        .stats-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="sidebar">
+      <div class="sidebar-logo">
+        <div class="name">CineMathèque</div>
+        <div class="tag">Project Dashboard</div>
       </div>
-    </div>
-  </div>
-
-  <!-- FEATURES -->
-  <div class="page" id="page-features">
-    <div class="page-header"><div class="page-title">Features</div><div class="page-sub">What's done, partial, and remaining</div></div>
-    <div class="feature-grid">
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">JWT Authentication</div><div class="feat-desc">Register, Login, Logout all working. Token stored in localStorage, role-based routing (user vs admin).</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">TMDB Movie Integration</div><div class="feat-desc">Trending, Popular movies and TV shows fetched via tmdbClient. All sections display dynamic API data.</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">Real-Time Search + Debounce</div><div class="feat-desc">SearchPage with 500ms debounce via useDebounce hook. Searches movies, TV shows, and people via TMDB multi-search.</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">Movie Trailer (YouTube Modal)</div><div class="feat-desc">Trailer fetched via TMDB videos endpoint. Plays in an iframe modal. Shows "unavailable" message gracefully if no trailer.</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">Movie Detail Page</div><div class="feat-desc">Backdrop, poster, cast grid, genres, rating, runtime, overview. Works for both movies and TV shows via /movie/:id and /tv/:id.</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">Admin Dashboard</div><div class="feat-desc">Full CRUD for custom movies. View, ban, and delete users. Role-protected route. Form for all required movie fields.</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">Error Handling (UI)</div><div class="feat-desc">Missing poster → "NO POSTER" shown. Missing description → fallback text. Missing trailer → message shown. App never crashes.</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-done">✓</div><div class="feature-text"><div class="feat-title">Backend CRUD + Swagger Docs</div><div class="feat-desc">Full REST API for auth, user data, and admin. Swagger UI auto-docs accessible at /api-docs.</div><span class="feat-badge badge-done">Complete</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-partial">◑</div><div class="feature-text"><div class="feat-title">Favorites Feature</div><div class="feat-desc">Backend fully built (add/remove/get endpoints). Frontend has no heart button on MovieCard or Detail page. No /favorites route exists yet.</div><span class="feat-badge badge-partial">Needs UI wiring</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-partial">◑</div><div class="feature-text"><div class="feat-title">Watch History</div><div class="feat-desc">Backend fully built. MoviesDetailPage never calls addToWatchHistory. No /history page or route exists yet.</div><span class="feat-badge badge-partial">Needs UI wiring</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-partial">◑</div><div class="feature-text"><div class="feat-title">Loader / Skeleton UI</div><div class="feat-desc">Loader.jsx exists and spinner is used in HomePage. Skeleton screens not implemented — plain text used in some detail pages.</div><span class="feat-badge badge-partial">Improve</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-partial">◑</div><div class="feature-text"><div class="feat-title">Infinite Scroll</div><div class="feat-desc">useInfiniteScroll.js hook is fully written but never imported or used in HomePage or MovieGrid.</div><span class="feat-badge badge-partial">Hook ready, not wired</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">○</div><div class="feature-text"><div class="feat-title">Favorites Page</div><div class="feat-desc">No /favorites route in app.routes.jsx. No FavoritesPage component created yet. Backend is fully ready.</div><span class="feat-badge badge-todo">Not started</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">○</div><div class="feature-text"><div class="feat-title">Watch History Page</div><div class="feat-desc">No /history route. No HistoryPage component. Backend has all endpoints and sorts history by date.</div><span class="feat-badge badge-todo">Not started</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">○</div><div class="feature-text"><div class="feat-title">MovieRow + RatingBadge</div><div class="feat-desc">Both component files exist in the codebase but are completely empty (0 bytes). Never implemented.</div><span class="feat-badge badge-todo">Empty files</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">○</div><div class="feature-text"><div class="feat-title">User Profile Page</div><div class="feat-desc">Backend GET/PUT profile endpoints are built. No ProfilePage route or component in the current frontend.</div><span class="feat-badge badge-todo">Backend ready</span></div></div>
-    </div>
-  </div>
-
-  <!-- FILE STRUCTURE -->
-  <div class="page" id="page-structure">
-    <div class="page-header"><div class="page-title">File Structure</div><div class="page-sub">Frontend and backend source layout</div></div>
-    <div class="two-col">
-      <div class="card">
-        <div class="card-title">Frontend — src/</div>
-        <div class="file-tree">
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">features/auth/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">Pages/AuthForm.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/LoginForm.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/RegisterForm.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">store/authSlice.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">services/auth.api.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">hooks/useAuth.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">features/movies/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">Pages/HomePage.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">Pages/MoviesDetailPage.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/MovieCard.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/HeroArchive.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/MovieGrid.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/MovieRow.jsx</span><span class="tree-status ts-empty">empty</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/RatingBadge.jsx</span><span class="tree-status ts-empty">empty</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">store/movieSlice.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">services/movie.api.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">hooks/useTrendingMovies.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">hooks/usePopularMovies.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">hooks/useTVShows.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">hooks/useMoviesDetails.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">constants/movieEndpoints.js</span><span class="tree-status ts-empty">empty</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">features/search/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">Pages/SearchPage.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">store/searchSlice.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">services/search.api.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">features/admin/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">Pages/AdminDashboard.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">services/admin.api.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">shared/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">api/axiosClient.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">api/tmdbClient.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">api.js</span><span class="tree-status ts-empty">empty</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/Navbar.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/Sidebar.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/MovieCard.jsx</span><span class="tree-status ts-partial">duplicate?</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/Carousel.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/Footer.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">components/Loader.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">hooks/useDebounce.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">hooks/useInfiniteScroll.js</span><span class="tree-status ts-partial">not wired</span></div>
-          <div class="tree-item"><span class="tree-icon">📄</span><span class="tree-name">routes/app.routes.jsx</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📄</span><span class="tree-name">store/store.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📄</span><span class="tree-name">App.jsx / main.jsx</span><span class="tree-status ts-done">done</span></div>
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Overview</div>
+        <div class="nav-item active" onclick="showPage('overview', this)">
+          <span class="nav-dot"></span> Project Status
+        </div>
+        <div class="nav-item" onclick="showPage('features', this)">
+          <span class="nav-dot"></span> Features
+        </div>
+        <div class="nav-section-label">Frontend</div>
+        <div class="nav-item" onclick="showPage('structure', this)">
+          <span class="nav-dot"></span> File Structure
+        </div>
+        <div class="nav-item" onclick="showPage('redux', this)">
+          <span class="nav-dot"></span> Redux Store
+        </div>
+        <div class="nav-item" onclick="showPage('pages', this)">
+          <span class="nav-dot"></span> Pages & Routes
+        </div>
+        <div class="nav-section-label">Backend</div>
+        <div class="nav-item" onclick="showPage('api', this)">
+          <span class="nav-dot"></span> API Routes
+        </div>
+        <div class="nav-item" onclick="showPage('models', this)">
+          <span class="nav-dot"></span> Data Models
+        </div>
+        <div class="nav-section-label">Next Steps</div>
+        <div class="nav-item" onclick="showPage('issues', this)">
+          <span class="nav-dot"></span> Issues & TODOs
+        </div>
+        <div class="nav-item" onclick="showPage('bonus', this)">
+          <span class="nav-dot"></span> Bonus Features
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">Backend — src/</div>
-        <div class="file-tree">
-          <div class="tree-item"><span class="tree-icon">📄</span><span class="tree-name">server.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📄</span><span class="tree-name">app.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">config/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">db.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">swagger.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">models/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">User.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">Movie.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">controllers/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">auth.controller.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">user.controller.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">admin.controller.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">routes/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">auth.routes.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">user.routes.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">admin.routes.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">middlewares/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">auth.middleware.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">error.middleware.js</span><span class="tree-status ts-done">done</span></div>
-          <div class="tree-item"><span class="tree-icon">📁</span><span class="tree-name">tests/</span></div>
-          <div class="tree-item tree-indent-2"><span class="tree-icon">📄</span><span class="tree-name">api.test.js</span><span class="tree-status ts-done">done</span></div>
+    </nav>
+
+    <main class="main">
+      <!-- OVERVIEW -->
+      <div class="page active" id="page-overview">
+        <div class="page-header">
+          <div class="page-title">Project Status</div>
+          <div class="page-sub">
+            CineMathèque — Full Stack Movie Discovery Platform
+          </div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card" style="--accent: var(--green)">
+            <div class="stat-label">Completion</div>
+            <div class="stat-val">~72%</div>
+            <div class="stat-desc">Core features built</div>
+          </div>
+          <div class="stat-card" style="--accent: var(--blue)">
+            <div class="stat-label">Frontend Files</div>
+            <div class="stat-val">25+</div>
+            <div class="stat-desc">Components, pages, hooks</div>
+          </div>
+          <div class="stat-card" style="--accent: var(--amber)">
+            <div class="stat-label">Backend Routes</div>
+            <div class="stat-val">16</div>
+            <div class="stat-desc">Auth + User + Admin</div>
+          </div>
+          <div class="stat-card" style="--accent: var(--purple)">
+            <div class="stat-label">Bonus Left</div>
+            <div class="stat-val">5</div>
+            <div class="stat-desc">Optional enhancements</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Feature Completion</div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Authentication (JWT + Redux)</span
+              ><span style="color: var(--green)">100%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--green)"
+                data-w="100"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>TMDB Movie Data Integration</span
+              ><span style="color: var(--green)">100%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--green)"
+                data-w="100"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Real-Time Search + Debouncing</span
+              ><span style="color: var(--green)">100%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--green)"
+                data-w="100"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Movie Detail + Trailer Modal</span
+              ><span style="color: var(--green)">100%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--green)"
+                data-w="100"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Admin Dashboard (CRUD)</span
+              ><span style="color: var(--green)">95%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--green)"
+                data-w="95"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Backend API (Auth + User + Admin)</span
+              ><span style="color: var(--green)">90%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--green)"
+                data-w="90"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Favorites Feature (UI side)</span
+              ><span style="color: var(--amber)">60%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--amber)"
+                data-w="60"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Watch History (UI side)</span
+              ><span style="color: var(--amber)">50%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--amber)"
+                data-w="50"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Infinite Scroll</span
+              ><span style="color: var(--amber)">40%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--amber)"
+                data-w="40"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Loader / Skeleton UI</span
+              ><span style="color: var(--amber)">55%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--amber)"
+                data-w="55"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Bonus Features</span
+              ><span style="color: var(--muted)">0%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="--bar-color: var(--muted)"
+                data-w="0"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Tech Stack</div>
+          <div class="arch-row">
+            <div class="arch-box">
+              <div class="arch-layer">Frontend</div>
+              <div class="arch-items">
+                <span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >React 19</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >Redux Toolkit</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >React Router v7</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >Tailwind CSS 4</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >Axios</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >Framer Motion</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >GSAP</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--blue)"
+                  >Vite</span
+                >
+              </div>
+            </div>
+            <div class="arch-box">
+              <div class="arch-layer">Backend</div>
+              <div class="arch-items">
+                <span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--green)"
+                  >Node.js</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--green)"
+                  >Express 5</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--green)"
+                  >MongoDB</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--green)"
+                  >Mongoose</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--green)"
+                  >JWT</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--green)"
+                  >bcryptjs</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--green)"
+                  >Swagger UI</span
+                >
+              </div>
+            </div>
+            <div class="arch-box">
+              <div class="arch-layer">External APIs</div>
+              <div class="arch-items">
+                <span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--red)"
+                  >TMDB API</span
+                ><span
+                  class="arch-chip highlight"
+                  style="--chip-color: var(--red)"
+                  >YouTube Embeds</span
+                >
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- REDUX -->
-  <div class="page" id="page-redux">
-    <div class="page-header"><div class="page-title">Redux Store</div><div class="page-sub">State slices, actions, async thunks</div></div>
-    <div class="card">
-      <div class="card-title">Active Slices</div>
-      <div class="redux-map">
-        <div class="redux-slice">
-          <div class="redux-slice-header"><span class="slice-name">auth</span><span class="slice-status">✓ Active</span></div>
-          <div class="redux-slice-body"><span class="state-field"><span class="state-key">user</span>: <span class="state-val">object | null</span></span><span class="state-field"><span class="state-key">token</span>: <span class="state-val">string | null</span></span><span class="state-field"><span class="state-key">loading</span>: <span class="state-val">boolean</span></span><span class="state-field"><span class="state-key">error</span>: <span class="state-val">string | null</span></span></div>
+      <!-- FEATURES -->
+      <div class="page" id="page-features">
+        <div class="page-header">
+          <div class="page-title">Features</div>
+          <div class="page-sub">What's done, partial, and remaining</div>
         </div>
-        <div class="redux-slice">
-          <div class="redux-slice-header"><span class="slice-name">movies</span><span class="slice-status">✓ Active</span></div>
-          <div class="redux-slice-body"><span class="state-field"><span class="state-key">trending</span>: <span class="state-val">Movie[]</span></span><span class="state-field"><span class="state-key">popular</span>: <span class="state-val">Movie[]</span></span><span class="state-field"><span class="state-key">tvShows</span>: <span class="state-val">Movie[]</span></span><span class="state-field"><span class="state-key">trendingLoading</span>: <span class="state-val">boolean</span></span><span class="state-field"><span class="state-key">popularLoading</span>: <span class="state-val">boolean</span></span><span class="state-field"><span class="state-key">error</span>: <span class="state-val">string | null</span></span></div>
-        </div>
-        <div class="redux-slice">
-          <div class="redux-slice-header"><span class="slice-name">search</span><span class="slice-status">✓ Active</span></div>
-          <div class="redux-slice-body"><span class="state-field"><span class="state-key">results</span>: <span class="state-val">Result[]</span></span><span class="state-field"><span class="state-key">query</span>: <span class="state-val">string</span></span><span class="state-field"><span class="state-key">loading</span>: <span class="state-val">boolean</span></span><span class="state-field"><span class="state-key">error</span>: <span class="state-val">string | null</span></span></div>
-        </div>
-        <div class="redux-slice" style="border-color:rgba(245,158,11,0.3)">
-          <div class="redux-slice-header"><span class="slice-name" style="color:var(--amber)">favoritesSlice</span><span style="font-size:10px;color:var(--amber)">⚠ Missing</span></div>
-          <div class="redux-slice-body" style="opacity:0.5"><span class="state-field"><span class="state-key">favorites</span>: <span class="state-val">Movie[]</span></span><span class="state-field"><span class="state-key">loading</span>: <span class="state-val">boolean</span></span></div>
-        </div>
-        <div class="redux-slice" style="border-color:rgba(245,158,11,0.3)">
-          <div class="redux-slice-header"><span class="slice-name" style="color:var(--amber)">historySlice</span><span style="font-size:10px;color:var(--amber)">⚠ Missing</span></div>
-          <div class="redux-slice-body" style="opacity:0.5"><span class="state-field"><span class="state-key">history</span>: <span class="state-val">Movie[]</span></span><span class="state-field"><span class="state-key">loading</span>: <span class="state-val">boolean</span></span></div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">JWT Authentication</div>
+              <div class="feat-desc">
+                Register, Login, Logout all working. Token stored in
+                localStorage, role-based routing (user vs admin).
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">TMDB Movie Integration</div>
+              <div class="feat-desc">
+                Trending, Popular movies and TV shows fetched via tmdbClient.
+                All sections display dynamic API data.
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">Real-Time Search + Debounce</div>
+              <div class="feat-desc">
+                SearchPage with 500ms debounce via useDebounce hook. Searches
+                movies, TV shows, and people via TMDB multi-search.
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">Movie Trailer (YouTube Modal)</div>
+              <div class="feat-desc">
+                Trailer fetched via TMDB videos endpoint. Plays in an iframe
+                modal. Shows "unavailable" message gracefully if no trailer.
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">Movie Detail Page</div>
+              <div class="feat-desc">
+                Backdrop, poster, cast grid, genres, rating, runtime, overview.
+                Works for both movies and TV shows via /movie/:id and /tv/:id.
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">Admin Dashboard</div>
+              <div class="feat-desc">
+                Full CRUD for custom movies. View, ban, and delete users.
+                Role-protected route. Form for all required movie fields.
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">Error Handling (UI)</div>
+              <div class="feat-desc">
+                Missing poster → "NO POSTER" shown. Missing description →
+                fallback text. Missing trailer → message shown. App never
+                crashes.
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-done">✓</div>
+            <div class="feature-text">
+              <div class="feat-title">Backend CRUD + Swagger Docs</div>
+              <div class="feat-desc">
+                Full REST API for auth, user data, and admin. Swagger UI
+                auto-docs accessible at /api-docs.
+              </div>
+              <span class="feat-badge badge-done">Complete</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-partial">◑</div>
+            <div class="feature-text">
+              <div class="feat-title">Favorites Feature</div>
+              <div class="feat-desc">
+                Backend fully built (add/remove/get endpoints). Frontend has no
+                heart button on MovieCard or Detail page. No /favorites route
+                exists yet.
+              </div>
+              <span class="feat-badge badge-partial">Needs UI wiring</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-partial">◑</div>
+            <div class="feature-text">
+              <div class="feat-title">Watch History</div>
+              <div class="feat-desc">
+                Backend fully built. MoviesDetailPage never calls
+                addToWatchHistory. No /history page or route exists yet.
+              </div>
+              <span class="feat-badge badge-partial">Needs UI wiring</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-partial">◑</div>
+            <div class="feature-text">
+              <div class="feat-title">Loader / Skeleton UI</div>
+              <div class="feat-desc">
+                Loader.jsx exists and spinner is used in HomePage. Skeleton
+                screens not implemented — plain text used in some detail pages.
+              </div>
+              <span class="feat-badge badge-partial">Improve</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-partial">◑</div>
+            <div class="feature-text">
+              <div class="feat-title">Infinite Scroll</div>
+              <div class="feat-desc">
+                useInfiniteScroll.js hook is fully written but never imported or
+                used in HomePage or MovieGrid.
+              </div>
+              <span class="feat-badge badge-partial"
+                >Hook ready, not wired</span
+              >
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">○</div>
+            <div class="feature-text">
+              <div class="feat-title">Favorites Page</div>
+              <div class="feat-desc">
+                No /favorites route in app.routes.jsx. No FavoritesPage
+                component created yet. Backend is fully ready.
+              </div>
+              <span class="feat-badge badge-todo">Not started</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">○</div>
+            <div class="feature-text">
+              <div class="feat-title">Watch History Page</div>
+              <div class="feat-desc">
+                No /history route. No HistoryPage component. Backend has all
+                endpoints and sorts history by date.
+              </div>
+              <span class="feat-badge badge-todo">Not started</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">○</div>
+            <div class="feature-text">
+              <div class="feat-title">MovieRow + RatingBadge</div>
+              <div class="feat-desc">
+                Both component files exist in the codebase but are completely
+                empty (0 bytes). Never implemented.
+              </div>
+              <span class="feat-badge badge-todo">Empty files</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">○</div>
+            <div class="feature-text">
+              <div class="feat-title">User Profile Page</div>
+              <div class="feat-desc">
+                Backend GET/PUT profile endpoints are built. No ProfilePage
+                route or component in the current frontend.
+              </div>
+              <span class="feat-badge badge-todo">Backend ready</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Async Thunks</div>
-      <table class="routes-table">
-        <thead><tr><th>Thunk</th><th>Slice</th><th>API Call</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td class="route-path">loginUser</td><td>auth</td><td>POST /api/auth/login</td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">registerUser</td><td>auth</td><td>POST /api/auth/register</td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">fetchTrendingMovies</td><td>movies</td><td>GET /trending/movie/week</td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">fetchPopularMovies</td><td>movies</td><td>GET /movie/popular</td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">fetchPopularTVShows</td><td>movies</td><td>GET /tv/popular</td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">fetchSearchResults</td><td>search</td><td>GET /search/multi</td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path" style="color:var(--amber)">fetchFavorites / addFavorite</td><td>—</td><td>GET/POST/DELETE /api/users/favorites</td><td><span class="feat-badge badge-todo">needs slice</span></td></tr>
-          <tr><td class="route-path" style="color:var(--amber)">fetchHistory / addHistory</td><td>—</td><td>GET/POST /api/users/history</td><td><span class="feat-badge badge-todo">needs slice</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- PAGES & ROUTES -->
-  <div class="page" id="page-pages">
-    <div class="page-header"><div class="page-title">Pages & Routes</div><div class="page-sub">Frontend routing, access control, and page status</div></div>
-    <div class="card">
-      <div class="card-title">app.routes.jsx</div>
-      <table class="routes-table">
-        <thead><tr><th>Path</th><th>Component</th><th>Access</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td class="route-path">/</td><td>AuthForm</td><td><span class="route-auth auth-public">public</span></td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">/home</td><td>HomePage</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">/search</td><td>SearchPage</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">/movie/:id</td><td>MoviesDetailPage</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">/tv/:id</td><td>MoviesDetailPage</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">/tmdb</td><td>TmdbDashboard</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path">/admin</td><td>AdminDashboard</td><td><span class="route-auth auth-admin">admin only</span></td><td><span class="feat-badge badge-done">done</span></td></tr>
-          <tr><td class="route-path" style="color:var(--amber)">/favorites</td><td>FavoritesPage</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-todo">missing</span></td></tr>
-          <tr><td class="route-path" style="color:var(--amber)">/history</td><td>HistoryPage</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-todo">missing</span></td></tr>
-          <tr><td class="route-path" style="color:var(--amber)">/profile</td><td>ProfilePage</td><td><span class="route-auth auth-private">auth required</span></td><td><span class="feat-badge badge-todo">missing</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- API ROUTES -->
-  <div class="page" id="page-api">
-    <div class="page-header"><div class="page-title">API Routes</div><div class="page-sub">All backend REST endpoints — base: /api</div></div>
-    <div class="card">
-      <div class="card-title">Auth — /api/auth</div>
-      <table class="routes-table">
-        <thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Access</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method-badge m-post">POST</span></td><td class="route-path">/api/auth/register</td><td>Register new user</td><td><span class="route-auth auth-public">public</span></td></tr>
-          <tr><td><span class="method-badge m-post">POST</span></td><td class="route-path">/api/auth/login</td><td>Login (role required in body)</td><td><span class="route-auth auth-public">public</span></td></tr>
-          <tr><td><span class="method-badge m-post">POST</span></td><td class="route-path">/api/auth/logout</td><td>Clear JWT cookie</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-get">GET</span></td><td class="route-path">/api/auth/me</td><td>Get current user</td><td><span class="route-auth auth-private">private</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="card">
-      <div class="card-title">User — /api/users</div>
-      <table class="routes-table">
-        <thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Access</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method-badge m-get">GET</span></td><td class="route-path">/api/users/profile</td><td>Get user profile</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-put">PUT</span></td><td class="route-path">/api/users/profile</td><td>Update username, avatar</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-get">GET</span></td><td class="route-path">/api/users/favorites</td><td>Get all favorites</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-post">POST</span></td><td class="route-path">/api/users/favorites</td><td>Add to favorites</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-delete">DEL</span></td><td class="route-path">/api/users/favorites/:tmdbId</td><td>Remove from favorites</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-get">GET</span></td><td class="route-path">/api/users/history</td><td>Get watch history</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-post">POST</span></td><td class="route-path">/api/users/history</td><td>Add to history (max 50)</td><td><span class="route-auth auth-private">private</span></td></tr>
-          <tr><td><span class="method-badge m-delete">DEL</span></td><td class="route-path">/api/users/history</td><td>Clear all watch history</td><td><span class="route-auth auth-private">private</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="card">
-      <div class="card-title">Admin — /api/admin</div>
-      <table class="routes-table">
-        <thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Access</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method-badge m-get">GET</span></td><td class="route-path">/api/admin/movies</td><td>Get all custom movies</td><td><span class="route-auth auth-admin">admin</span></td></tr>
-          <tr><td><span class="method-badge m-post">POST</span></td><td class="route-path">/api/admin/movies</td><td>Create a movie</td><td><span class="route-auth auth-admin">admin</span></td></tr>
-          <tr><td><span class="method-badge m-put">PUT</span></td><td class="route-path">/api/admin/movies/:id</td><td>Update movie details</td><td><span class="route-auth auth-admin">admin</span></td></tr>
-          <tr><td><span class="method-badge m-delete">DEL</span></td><td class="route-path">/api/admin/movies/:id</td><td>Delete a movie</td><td><span class="route-auth auth-admin">admin</span></td></tr>
-          <tr><td><span class="method-badge m-get">GET</span></td><td class="route-path">/api/admin/users</td><td>Get all users</td><td><span class="route-auth auth-admin">admin</span></td></tr>
-          <tr><td><span class="method-badge m-put">PUT</span></td><td class="route-path">/api/admin/users/:id/ban</td><td>Toggle ban status</td><td><span class="route-auth auth-admin">admin</span></td></tr>
-          <tr><td><span class="method-badge m-delete">DEL</span></td><td class="route-path">/api/admin/users/:id</td><td>Delete a user</td><td><span class="route-auth auth-admin">admin</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- DATA MODELS -->
-  <div class="page" id="page-models">
-    <div class="page-header"><div class="page-title">Data Models</div><div class="page-sub">MongoDB schemas via Mongoose</div></div>
-    <div class="two-col">
-      <div class="card">
-        <div class="card-title">User Model</div>
-        <table class="routes-table">
-          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
-          <tbody>
-            <tr><td class="route-path">username</td><td>String</td><td>unique, min 3 chars</td></tr>
-            <tr><td class="route-path">email</td><td>String</td><td>unique, regex validated</td></tr>
-            <tr><td class="route-path">password</td><td>String</td><td>bcrypt hashed, select:false</td></tr>
-            <tr><td class="route-path">role</td><td>Enum</td><td>'user' | 'admin'</td></tr>
-            <tr><td class="route-path">isBanned</td><td>Boolean</td><td>default false</td></tr>
-            <tr><td class="route-path">avatar</td><td>String</td><td>URL</td></tr>
-            <tr><td class="route-path">favorites</td><td>Array</td><td>[ {tmdbId, title, poster, mediaType} ]</td></tr>
-            <tr><td class="route-path">watchHistory</td><td>Array</td><td>[ {tmdbId, title, poster, mediaType, watchedAt} ]</td></tr>
-            <tr><td class="route-path">timestamps</td><td>Auto</td><td>createdAt, updatedAt</td></tr>
-          </tbody>
-        </table>
+      <!-- FILE STRUCTURE -->
+      <div class="page" id="page-structure">
+        <div class="page-header">
+          <div class="page-title">File Structure</div>
+          <div class="page-sub">Frontend and backend source layout</div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Frontend — src/</div>
+            <div class="file-tree">
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">features/auth/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">Pages/AuthForm.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/LoginForm.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/RegisterForm.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">store/authSlice.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">services/auth.api.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">hooks/useAuth.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">features/movies/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">Pages/HomePage.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">Pages/MoviesDetailPage.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/MovieCard.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/HeroArchive.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/MovieGrid.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/MovieRow.jsx</span
+                ><span class="tree-status ts-empty">empty</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/RatingBadge.jsx</span
+                ><span class="tree-status ts-empty">empty</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">store/movieSlice.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">services/movie.api.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">hooks/useTrendingMovies.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">hooks/usePopularMovies.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">hooks/useTVShows.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">hooks/useMoviesDetails.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">constants/movieEndpoints.js</span
+                ><span class="tree-status ts-empty">empty</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">features/search/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">Pages/SearchPage.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">store/searchSlice.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">services/search.api.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">features/admin/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">Pages/AdminDashboard.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">services/admin.api.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">shared/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">api/axiosClient.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">api/tmdbClient.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">api.js</span
+                ><span class="tree-status ts-empty">empty</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/Navbar.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/Sidebar.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/MovieCard.jsx</span
+                ><span class="tree-status ts-partial">duplicate?</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/Carousel.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/Footer.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">components/Loader.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">hooks/useDebounce.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">hooks/useInfiniteScroll.js</span
+                ><span class="tree-status ts-partial">not wired</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">routes/app.routes.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">store/store.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">App.jsx / main.jsx</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Backend — src/</div>
+            <div class="file-tree">
+              <div class="tree-item">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">server.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">app.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">config/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">db.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">swagger.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">models/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">User.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">Movie.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">controllers/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">auth.controller.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">user.controller.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">admin.controller.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">routes/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">auth.routes.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">user.routes.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">admin.routes.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">middlewares/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">auth.middleware.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">error.middleware.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+              <div class="tree-item">
+                <span class="tree-icon">📁</span
+                ><span class="tree-name">tests/</span>
+              </div>
+              <div class="tree-item tree-indent-2">
+                <span class="tree-icon">📄</span
+                ><span class="tree-name">api.test.js</span
+                ><span class="tree-status ts-done">done</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-title">Movie Model (Admin Custom)</div>
-        <table class="routes-table">
-          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
-          <tbody>
-            <tr><td class="route-path">title</td><td>String</td><td>required</td></tr>
-            <tr><td class="route-path">poster</td><td>String</td><td>URL, default ''</td></tr>
-            <tr><td class="route-path">description</td><td>String</td><td>default 'Description not available'</td></tr>
-            <tr><td class="route-path">tmdbId</td><td>Number</td><td>optional link to TMDB</td></tr>
-            <tr><td class="route-path">releaseDate</td><td>String</td><td>—</td></tr>
-            <tr><td class="route-path">trailerUrl</td><td>String</td><td>YouTube URL</td></tr>
-            <tr><td class="route-path">genre</td><td>[String]</td><td>array of genre strings</td></tr>
-            <tr><td class="route-path">category</td><td>Enum</td><td>'movie'|'tv'|'anime'|'documentary'|'other'</td></tr>
-            <tr><td class="route-path">rating</td><td>Number</td><td>0–10</td></tr>
-            <tr><td class="route-path">addedBy</td><td>ObjectId</td><td>ref: User</td></tr>
-          </tbody>
-        </table>
+
+      <!-- REDUX -->
+      <div class="page" id="page-redux">
+        <div class="page-header">
+          <div class="page-title">Redux Store</div>
+          <div class="page-sub">State slices, actions, async thunks</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Active Slices</div>
+          <div class="redux-map">
+            <div class="redux-slice">
+              <div class="redux-slice-header">
+                <span class="slice-name">auth</span
+                ><span class="slice-status">✓ Active</span>
+              </div>
+              <div class="redux-slice-body">
+                <span class="state-field"
+                  ><span class="state-key">user</span>:
+                  <span class="state-val">object | null</span></span
+                ><span class="state-field"
+                  ><span class="state-key">token</span>:
+                  <span class="state-val">string | null</span></span
+                ><span class="state-field"
+                  ><span class="state-key">loading</span>:
+                  <span class="state-val">boolean</span></span
+                ><span class="state-field"
+                  ><span class="state-key">error</span>:
+                  <span class="state-val">string | null</span></span
+                >
+              </div>
+            </div>
+            <div class="redux-slice">
+              <div class="redux-slice-header">
+                <span class="slice-name">movies</span
+                ><span class="slice-status">✓ Active</span>
+              </div>
+              <div class="redux-slice-body">
+                <span class="state-field"
+                  ><span class="state-key">trending</span>:
+                  <span class="state-val">Movie[]</span></span
+                ><span class="state-field"
+                  ><span class="state-key">popular</span>:
+                  <span class="state-val">Movie[]</span></span
+                ><span class="state-field"
+                  ><span class="state-key">tvShows</span>:
+                  <span class="state-val">Movie[]</span></span
+                ><span class="state-field"
+                  ><span class="state-key">trendingLoading</span>:
+                  <span class="state-val">boolean</span></span
+                ><span class="state-field"
+                  ><span class="state-key">popularLoading</span>:
+                  <span class="state-val">boolean</span></span
+                ><span class="state-field"
+                  ><span class="state-key">error</span>:
+                  <span class="state-val">string | null</span></span
+                >
+              </div>
+            </div>
+            <div class="redux-slice">
+              <div class="redux-slice-header">
+                <span class="slice-name">search</span
+                ><span class="slice-status">✓ Active</span>
+              </div>
+              <div class="redux-slice-body">
+                <span class="state-field"
+                  ><span class="state-key">results</span>:
+                  <span class="state-val">Result[]</span></span
+                ><span class="state-field"
+                  ><span class="state-key">query</span>:
+                  <span class="state-val">string</span></span
+                ><span class="state-field"
+                  ><span class="state-key">loading</span>:
+                  <span class="state-val">boolean</span></span
+                ><span class="state-field"
+                  ><span class="state-key">error</span>:
+                  <span class="state-val">string | null</span></span
+                >
+              </div>
+            </div>
+            <div
+              class="redux-slice"
+              style="border-color: rgba(245, 158, 11, 0.3)"
+            >
+              <div class="redux-slice-header">
+                <span class="slice-name" style="color: var(--amber)"
+                  >favoritesSlice</span
+                ><span style="font-size: 10px; color: var(--amber)"
+                  >⚠ Missing</span
+                >
+              </div>
+              <div class="redux-slice-body" style="opacity: 0.5">
+                <span class="state-field"
+                  ><span class="state-key">favorites</span>:
+                  <span class="state-val">Movie[]</span></span
+                ><span class="state-field"
+                  ><span class="state-key">loading</span>:
+                  <span class="state-val">boolean</span></span
+                >
+              </div>
+            </div>
+            <div
+              class="redux-slice"
+              style="border-color: rgba(245, 158, 11, 0.3)"
+            >
+              <div class="redux-slice-header">
+                <span class="slice-name" style="color: var(--amber)"
+                  >historySlice</span
+                ><span style="font-size: 10px; color: var(--amber)"
+                  >⚠ Missing</span
+                >
+              </div>
+              <div class="redux-slice-body" style="opacity: 0.5">
+                <span class="state-field"
+                  ><span class="state-key">history</span>:
+                  <span class="state-val">Movie[]</span></span
+                ><span class="state-field"
+                  ><span class="state-key">loading</span>:
+                  <span class="state-val">boolean</span></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Async Thunks</div>
+          <table class="routes-table">
+            <thead>
+              <tr>
+                <th>Thunk</th>
+                <th>Slice</th>
+                <th>API Call</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="route-path">loginUser</td>
+                <td>auth</td>
+                <td>POST /api/auth/login</td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">registerUser</td>
+                <td>auth</td>
+                <td>POST /api/auth/register</td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">fetchTrendingMovies</td>
+                <td>movies</td>
+                <td>GET /trending/movie/week</td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">fetchPopularMovies</td>
+                <td>movies</td>
+                <td>GET /movie/popular</td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">fetchPopularTVShows</td>
+                <td>movies</td>
+                <td>GET /tv/popular</td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">fetchSearchResults</td>
+                <td>search</td>
+                <td>GET /search/multi</td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path" style="color: var(--amber)">
+                  fetchFavorites / addFavorite
+                </td>
+                <td>—</td>
+                <td>GET/POST/DELETE /api/users/favorites</td>
+                <td><span class="feat-badge badge-todo">needs slice</span></td>
+              </tr>
+              <tr>
+                <td class="route-path" style="color: var(--amber)">
+                  fetchHistory / addHistory
+                </td>
+                <td>—</td>
+                <td>GET/POST /api/users/history</td>
+                <td><span class="feat-badge badge-todo">needs slice</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- ISSUES -->
-  <div class="page" id="page-issues">
-    <div class="page-header"><div class="page-title">Issues & TODOs</div><div class="page-sub">What needs to be fixed or completed</div></div>
-    <div class="issue-list">
-      <div class="issue-item severity-critical"><div class="issue-icon">🔴</div><div><div class="issue-title">Favorites UI not connected to backend</div><div class="issue-desc">The backend has full favorites endpoints (add/remove/get) but MovieCard and MoviesDetailPage have no heart button. Need to: add button to MovieCard, call POST /api/users/favorites on click, create a favoritesSlice, and build a /favorites page.</div><span class="issue-tag">MISSING FEATURE</span></div></div>
-      <div class="issue-item severity-critical"><div class="issue-icon">🔴</div><div><div class="issue-title">Watch History never gets recorded from the UI</div><div class="issue-desc">MoviesDetailPage loads movie data but never calls addToWatchHistory. Fix: call POST /api/users/history when the detail page mounts or when trailer is played. Then build a /history page.</div><span class="issue-tag">MISSING FEATURE</span></div></div>
-      <div class="issue-item severity-warn"><div class="issue-icon">🟡</div><div><div class="issue-title">useInfiniteScroll hook exists but is never used</div><div class="issue-desc">The hook in shared/hooks/useInfiniteScroll.js is written but never imported. Wire it to HomePage with page-based TMDB fetching (add a page param to getTrendingMovies / getPopularMovies).</div><span class="issue-tag">INCOMPLETE</span></div></div>
-      <div class="issue-item severity-warn"><div class="issue-icon">🟡</div><div><div class="issue-title">MovieRow.jsx and RatingBadge.jsx are empty files</div><div class="issue-desc">Both component files are 0 bytes. MovieRow would be useful for horizontal scrolling sections; RatingBadge for a reusable star/number rating display using TMDB vote_average.</div><span class="issue-tag">EMPTY FILE</span></div></div>
-      <div class="issue-item severity-warn"><div class="issue-icon">🟡</div><div><div class="issue-title">Two MovieCard components — possible import confusion</div><div class="issue-desc">MovieCard exists in both shared/components/ and features/movies/components/. They appear to have different implementations. Consolidate into one or clearly differentiate their purpose.</div><span class="issue-tag">DUPLICATE</span></div></div>
-      <div class="issue-item severity-warn"><div class="issue-icon">🟡</div><div><div class="issue-title">Skeleton UI not implemented</div><div class="issue-desc">The task requires skeleton screens during loading. Most pages currently use plain text ("LOADING ARCHIVE...") or a spinner. Skeleton card layouts with placeholder animations would fully satisfy this requirement.</div><span class="issue-tag">UX IMPROVEMENT</span></div></div>
-      <div class="issue-item severity-info"><div class="issue-icon">🔵</div><div><div class="issue-title">Navbar is built but never mounted in the app</div><div class="issue-desc">Navbar.jsx and Sidebar.jsx exist as polished shared components but are never used in App.jsx or any layout wrapper. Users currently navigate via ad-hoc buttons placed directly inside pages.</div><span class="issue-tag">UI / UX</span></div></div>
-      <div class="issue-item severity-info"><div class="issue-icon">🔵</div><div><div class="issue-title">shared/api.js and movieEndpoints.js are empty</div><div class="issue-desc">Two constant/utility files were created but never filled. Either use them (centralize endpoint strings, shared helpers) or remove them to keep the codebase clean.</div><span class="issue-tag">CLEANUP</span></div></div>
-      <div class="issue-item severity-info"><div class="issue-icon">🔵</div><div><div class="issue-title">Debug console.log statements left in code</div><div class="issue-desc">movie.api.js has "✅ Movie Details:" and auth.controller.js has "-> Login Attempt:" logs. Remove or replace with a proper logger before submitting or deploying.</div><span class="issue-tag">CLEANUP</span></div></div>
-    </div>
-  </div>
+      <!-- PAGES & ROUTES -->
+      <div class="page" id="page-pages">
+        <div class="page-header">
+          <div class="page-title">Pages & Routes</div>
+          <div class="page-sub">
+            Frontend routing, access control, and page status
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">app.routes.jsx</div>
+          <table class="routes-table">
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Component</th>
+                <th>Access</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="route-path">/</td>
+                <td>AuthForm</td>
+                <td><span class="route-auth auth-public">public</span></td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">/home</td>
+                <td>HomePage</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">/search</td>
+                <td>SearchPage</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">/movie/:id</td>
+                <td>MoviesDetailPage</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">/tv/:id</td>
+                <td>MoviesDetailPage</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">/tmdb</td>
+                <td>TmdbDashboard</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path">/admin</td>
+                <td>AdminDashboard</td>
+                <td><span class="route-auth auth-admin">admin only</span></td>
+                <td><span class="feat-badge badge-done">done</span></td>
+              </tr>
+              <tr>
+                <td class="route-path" style="color: var(--amber)">
+                  /favorites
+                </td>
+                <td>FavoritesPage</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-todo">missing</span></td>
+              </tr>
+              <tr>
+                <td class="route-path" style="color: var(--amber)">/history</td>
+                <td>HistoryPage</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-todo">missing</span></td>
+              </tr>
+              <tr>
+                <td class="route-path" style="color: var(--amber)">/profile</td>
+                <td>ProfilePage</td>
+                <td>
+                  <span class="route-auth auth-private">auth required</span>
+                </td>
+                <td><span class="feat-badge badge-todo">missing</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-  <!-- BONUS -->
-  <div class="page" id="page-bonus">
-    <div class="page-header"><div class="page-title">Bonus Features</div><div class="page-sub">Optional enhancements to go above the requirements</div></div>
-    <div class="feature-grid">
-      <div class="feature-item"><div class="feature-icon icon-todo">☾</div><div class="feature-text"><div class="feat-title">Dark / Light Mode Toggle</div><div class="feat-desc">The app is dark-only. A toggle using a CSS class on the root element with localStorage persistence is clean. Tailwind v4 CSS variables make this straightforward to implement.</div><span class="feat-badge badge-todo">Not started</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">★</div><div class="feature-text"><div class="feat-title">Movie Ratings Display</div><div class="feat-desc">RatingBadge.jsx already exists as an empty file — the ideal place. Use TMDB's vote_average field (already fetched everywhere). Style as stars or a number badge.</div><span class="feat-badge badge-todo">File exists, empty</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">⊞</div><div class="feature-text"><div class="feat-title">Genre Filters</div><div class="feat-desc">Add genre filter chips on HomePage or SearchPage. TMDB returns genre_ids per movie; use /genre/movie/list endpoint to map IDs to names. Filter the displayed results client-side.</div><span class="feat-badge badge-todo">Not started</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">🔖</div><div class="feature-text"><div class="feat-title">Bookmark / Watchlist System</div><div class="feat-desc">A "Want to Watch" list separate from Favorites. Requires a new watchlist array in the User model and corresponding add/remove/get endpoints. Mirrors the favorites pattern.</div><span class="feat-badge badge-todo">Not started</span></div></div>
-      <div class="feature-item"><div class="feature-icon icon-todo">📋</div><div class="feature-text"><div class="feat-title">Watchlist Page</div><div class="feat-desc">A /watchlist route showing saved "Want to Watch" items. Straightforward once the bookmark system is built — same page structure as Favorites.</div><span class="feat-badge badge-todo">Depends on bookmarks</span></div></div>
-    </div>
-  </div>
+      <!-- API ROUTES -->
+      <div class="page" id="page-api">
+        <div class="page-header">
+          <div class="page-title">API Routes</div>
+          <div class="page-sub">All backend REST endpoints — base: /api</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Auth — /api/auth</div>
+          <table class="routes-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Description</th>
+                <th>Access</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td class="route-path">/api/auth/register</td>
+                <td>Register new user</td>
+                <td><span class="route-auth auth-public">public</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td class="route-path">/api/auth/login</td>
+                <td>Login (role required in body)</td>
+                <td><span class="route-auth auth-public">public</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td class="route-path">/api/auth/logout</td>
+                <td>Clear JWT cookie</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-get">GET</span></td>
+                <td class="route-path">/api/auth/me</td>
+                <td>Get current user</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">User — /api/users</div>
+          <table class="routes-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Description</th>
+                <th>Access</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="method-badge m-get">GET</span></td>
+                <td class="route-path">/api/users/profile</td>
+                <td>Get user profile</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-put">PUT</span></td>
+                <td class="route-path">/api/users/profile</td>
+                <td>Update username, avatar</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-get">GET</span></td>
+                <td class="route-path">/api/users/favorites</td>
+                <td>Get all favorites</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td class="route-path">/api/users/favorites</td>
+                <td>Add to favorites</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-delete">DEL</span></td>
+                <td class="route-path">/api/users/favorites/:tmdbId</td>
+                <td>Remove from favorites</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-get">GET</span></td>
+                <td class="route-path">/api/users/history</td>
+                <td>Get watch history</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td class="route-path">/api/users/history</td>
+                <td>Add to history (max 50)</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-delete">DEL</span></td>
+                <td class="route-path">/api/users/history</td>
+                <td>Clear all watch history</td>
+                <td><span class="route-auth auth-private">private</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Admin — /api/admin</div>
+          <table class="routes-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Description</th>
+                <th>Access</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="method-badge m-get">GET</span></td>
+                <td class="route-path">/api/admin/movies</td>
+                <td>Get all custom movies</td>
+                <td><span class="route-auth auth-admin">admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td class="route-path">/api/admin/movies</td>
+                <td>Create a movie</td>
+                <td><span class="route-auth auth-admin">admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-put">PUT</span></td>
+                <td class="route-path">/api/admin/movies/:id</td>
+                <td>Update movie details</td>
+                <td><span class="route-auth auth-admin">admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-delete">DEL</span></td>
+                <td class="route-path">/api/admin/movies/:id</td>
+                <td>Delete a movie</td>
+                <td><span class="route-auth auth-admin">admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-get">GET</span></td>
+                <td class="route-path">/api/admin/users</td>
+                <td>Get all users</td>
+                <td><span class="route-auth auth-admin">admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-put">PUT</span></td>
+                <td class="route-path">/api/admin/users/:id/ban</td>
+                <td>Toggle ban status</td>
+                <td><span class="route-auth auth-admin">admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-delete">DEL</span></td>
+                <td class="route-path">/api/admin/users/:id</td>
+                <td>Delete a user</td>
+                <td><span class="route-auth auth-admin">admin</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-</main>
+      <!-- DATA MODELS -->
+      <div class="page" id="page-models">
+        <div class="page-header">
+          <div class="page-title">Data Models</div>
+          <div class="page-sub">MongoDB schemas via Mongoose</div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">User Model</div>
+            <table class="routes-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Type</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="route-path">username</td>
+                  <td>String</td>
+                  <td>unique, min 3 chars</td>
+                </tr>
+                <tr>
+                  <td class="route-path">email</td>
+                  <td>String</td>
+                  <td>unique, regex validated</td>
+                </tr>
+                <tr>
+                  <td class="route-path">password</td>
+                  <td>String</td>
+                  <td>bcrypt hashed, select:false</td>
+                </tr>
+                <tr>
+                  <td class="route-path">role</td>
+                  <td>Enum</td>
+                  <td>'user' | 'admin'</td>
+                </tr>
+                <tr>
+                  <td class="route-path">isBanned</td>
+                  <td>Boolean</td>
+                  <td>default false</td>
+                </tr>
+                <tr>
+                  <td class="route-path">avatar</td>
+                  <td>String</td>
+                  <td>URL</td>
+                </tr>
+                <tr>
+                  <td class="route-path">favorites</td>
+                  <td>Array</td>
+                  <td>[ {tmdbId, title, poster, mediaType} ]</td>
+                </tr>
+                <tr>
+                  <td class="route-path">watchHistory</td>
+                  <td>Array</td>
+                  <td>[ {tmdbId, title, poster, mediaType, watchedAt} ]</td>
+                </tr>
+                <tr>
+                  <td class="route-path">timestamps</td>
+                  <td>Auto</td>
+                  <td>createdAt, updatedAt</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-title">Movie Model (Admin Custom)</div>
+            <table class="routes-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Type</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="route-path">title</td>
+                  <td>String</td>
+                  <td>required</td>
+                </tr>
+                <tr>
+                  <td class="route-path">poster</td>
+                  <td>String</td>
+                  <td>URL, default ''</td>
+                </tr>
+                <tr>
+                  <td class="route-path">description</td>
+                  <td>String</td>
+                  <td>default 'Description not available'</td>
+                </tr>
+                <tr>
+                  <td class="route-path">tmdbId</td>
+                  <td>Number</td>
+                  <td>optional link to TMDB</td>
+                </tr>
+                <tr>
+                  <td class="route-path">releaseDate</td>
+                  <td>String</td>
+                  <td>—</td>
+                </tr>
+                <tr>
+                  <td class="route-path">trailerUrl</td>
+                  <td>String</td>
+                  <td>YouTube URL</td>
+                </tr>
+                <tr>
+                  <td class="route-path">genre</td>
+                  <td>[String]</td>
+                  <td>array of genre strings</td>
+                </tr>
+                <tr>
+                  <td class="route-path">category</td>
+                  <td>Enum</td>
+                  <td>'movie'|'tv'|'anime'|'documentary'|'other'</td>
+                </tr>
+                <tr>
+                  <td class="route-path">rating</td>
+                  <td>Number</td>
+                  <td>0–10</td>
+                </tr>
+                <tr>
+                  <td class="route-path">addedBy</td>
+                  <td>ObjectId</td>
+                  <td>ref: User</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-<script>
-  function showPage(id, navEl) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
-    document.getElementById('page-' + id).classList.add('active')
-    navEl.classList.add('active')
-    if (id === 'overview') animateBars()
-  }
-  function animateBars() {
-    setTimeout(() => {
-      document.querySelectorAll('.progress-fill').forEach(el => {
-        el.style.width = el.dataset.w + '%'
-      })
-    }, 100)
-  }
-  document.addEventListener('DOMContentLoaded', animateBars)
-</script>
-</body>
+      <!-- ISSUES -->
+      <div class="page" id="page-issues">
+        <div class="page-header">
+          <div class="page-title">Issues & TODOs</div>
+          <div class="page-sub">What needs to be fixed or completed</div>
+        </div>
+        <div class="issue-list">
+          <div class="issue-item severity-critical">
+            <div class="issue-icon">🔴</div>
+            <div>
+              <div class="issue-title">
+                Favorites UI not connected to backend
+              </div>
+              <div class="issue-desc">
+                The backend has full favorites endpoints (add/remove/get) but
+                MovieCard and MoviesDetailPage have no heart button. Need to:
+                add button to MovieCard, call POST /api/users/favorites on
+                click, create a favoritesSlice, and build a /favorites page.
+              </div>
+              <span class="issue-tag">MISSING FEATURE</span>
+            </div>
+          </div>
+          <div class="issue-item severity-critical">
+            <div class="issue-icon">🔴</div>
+            <div>
+              <div class="issue-title">
+                Watch History never gets recorded from the UI
+              </div>
+              <div class="issue-desc">
+                MoviesDetailPage loads movie data but never calls
+                addToWatchHistory. Fix: call POST /api/users/history when the
+                detail page mounts or when trailer is played. Then build a
+                /history page.
+              </div>
+              <span class="issue-tag">MISSING FEATURE</span>
+            </div>
+          </div>
+          <div class="issue-item severity-warn">
+            <div class="issue-icon">🟡</div>
+            <div>
+              <div class="issue-title">
+                useInfiniteScroll hook exists but is never used
+              </div>
+              <div class="issue-desc">
+                The hook in shared/hooks/useInfiniteScroll.js is written but
+                never imported. Wire it to HomePage with page-based TMDB
+                fetching (add a page param to getTrendingMovies /
+                getPopularMovies).
+              </div>
+              <span class="issue-tag">INCOMPLETE</span>
+            </div>
+          </div>
+          <div class="issue-item severity-warn">
+            <div class="issue-icon">🟡</div>
+            <div>
+              <div class="issue-title">
+                MovieRow.jsx and RatingBadge.jsx are empty files
+              </div>
+              <div class="issue-desc">
+                Both component files are 0 bytes. MovieRow would be useful for
+                horizontal scrolling sections; RatingBadge for a reusable
+                star/number rating display using TMDB vote_average.
+              </div>
+              <span class="issue-tag">EMPTY FILE</span>
+            </div>
+          </div>
+          <div class="issue-item severity-warn">
+            <div class="issue-icon">🟡</div>
+            <div>
+              <div class="issue-title">
+                Two MovieCard components — possible import confusion
+              </div>
+              <div class="issue-desc">
+                MovieCard exists in both shared/components/ and
+                features/movies/components/. They appear to have different
+                implementations. Consolidate into one or clearly differentiate
+                their purpose.
+              </div>
+              <span class="issue-tag">DUPLICATE</span>
+            </div>
+          </div>
+          <div class="issue-item severity-warn">
+            <div class="issue-icon">🟡</div>
+            <div>
+              <div class="issue-title">Skeleton UI not implemented</div>
+              <div class="issue-desc">
+                The task requires skeleton screens during loading. Most pages
+                currently use plain text ("LOADING ARCHIVE...") or a spinner.
+                Skeleton card layouts with placeholder animations would fully
+                satisfy this requirement.
+              </div>
+              <span class="issue-tag">UX IMPROVEMENT</span>
+            </div>
+          </div>
+          <div class="issue-item severity-info">
+            <div class="issue-icon">🔵</div>
+            <div>
+              <div class="issue-title">
+                Navbar is built but never mounted in the app
+              </div>
+              <div class="issue-desc">
+                Navbar.jsx and Sidebar.jsx exist as polished shared components
+                but are never used in App.jsx or any layout wrapper. Users
+                currently navigate via ad-hoc buttons placed directly inside
+                pages.
+              </div>
+              <span class="issue-tag">UI / UX</span>
+            </div>
+          </div>
+          <div class="issue-item severity-info">
+            <div class="issue-icon">🔵</div>
+            <div>
+              <div class="issue-title">
+                shared/api.js and movieEndpoints.js are empty
+              </div>
+              <div class="issue-desc">
+                Two constant/utility files were created but never filled. Either
+                use them (centralize endpoint strings, shared helpers) or remove
+                them to keep the codebase clean.
+              </div>
+              <span class="issue-tag">CLEANUP</span>
+            </div>
+          </div>
+          <div class="issue-item severity-info">
+            <div class="issue-icon">🔵</div>
+            <div>
+              <div class="issue-title">
+                Debug console.log statements left in code
+              </div>
+              <div class="issue-desc">
+                movie.api.js has "✅ Movie Details:" and auth.controller.js has
+                "-> Login Attempt:" logs. Remove or replace with a proper logger
+                before submitting or deploying.
+              </div>
+              <span class="issue-tag">CLEANUP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BONUS -->
+      <div class="page" id="page-bonus">
+        <div class="page-header">
+          <div class="page-title">Bonus Features</div>
+          <div class="page-sub">
+            Optional enhancements to go above the requirements
+          </div>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">☾</div>
+            <div class="feature-text">
+              <div class="feat-title">Dark / Light Mode Toggle</div>
+              <div class="feat-desc">
+                The app is dark-only. A toggle using a CSS class on the root
+                element with localStorage persistence is clean. Tailwind v4 CSS
+                variables make this straightforward to implement.
+              </div>
+              <span class="feat-badge badge-todo">Not started</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">★</div>
+            <div class="feature-text">
+              <div class="feat-title">Movie Ratings Display</div>
+              <div class="feat-desc">
+                RatingBadge.jsx already exists as an empty file — the ideal
+                place. Use TMDB's vote_average field (already fetched
+                everywhere). Style as stars or a number badge.
+              </div>
+              <span class="feat-badge badge-todo">File exists, empty</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">⊞</div>
+            <div class="feature-text">
+              <div class="feat-title">Genre Filters</div>
+              <div class="feat-desc">
+                Add genre filter chips on HomePage or SearchPage. TMDB returns
+                genre_ids per movie; use /genre/movie/list endpoint to map IDs
+                to names. Filter the displayed results client-side.
+              </div>
+              <span class="feat-badge badge-todo">Not started</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">🔖</div>
+            <div class="feature-text">
+              <div class="feat-title">Bookmark / Watchlist System</div>
+              <div class="feat-desc">
+                A "Want to Watch" list separate from Favorites. Requires a new
+                watchlist array in the User model and corresponding
+                add/remove/get endpoints. Mirrors the favorites pattern.
+              </div>
+              <span class="feat-badge badge-todo">Not started</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon icon-todo">📋</div>
+            <div class="feature-text">
+              <div class="feat-title">Watchlist Page</div>
+              <div class="feat-desc">
+                A /watchlist route showing saved "Want to Watch" items.
+                Straightforward once the bookmark system is built — same page
+                structure as Favorites.
+              </div>
+              <span class="feat-badge badge-todo">Depends on bookmarks</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      function showPage(id, navEl) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((n) => n.classList.remove("active"));
+        document.getElementById("page-" + id).classList.add("active");
+        navEl.classList.add("active");
+        if (id === "overview") animateBars();
+      }
+      function animateBars() {
+        setTimeout(() => {
+          document.querySelectorAll(".progress-fill").forEach((el) => {
+            el.style.width = el.dataset.w + "%";
+          });
+        }, 100);
+      }
+      document.addEventListener("DOMContentLoaded", animateBars);
+    </script>
+  </body>
 </html>

@@ -29,7 +29,7 @@ app.use(
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ success: true, message: '🎬 CineScope API is running' });
+    res.status(200).json({ success: true, message: '🎬 CineMathèque API is running' });
 });
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
