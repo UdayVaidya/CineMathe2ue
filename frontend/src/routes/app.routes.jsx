@@ -16,6 +16,7 @@ const SearchPage = lazy(() => import("../features/search/Pages/SearchPage"))
 const AdminDashboard = lazy(() => import("../features/admin/Pages/AdminDashboard"))
 const FavoritesPage = lazy(() => import("../features/favorites/Pages/FavoritesPage"))
 const MoodSearchPage = lazy(() => import("../features/Expression/Pages/MoodSearchPage"))
+const ProfilePage = lazy(() => import("../features/profile/Pages/ProfilePage"))
 
 // Minimal fallback — avoids flash of unstyled content
 function PageShell() {
@@ -61,6 +62,7 @@ const AppRoutes = () => {
                     <Route path="/tv/:id" element={user ? <MoviesDetailPage /> : <Navigate to="/" />} />
                     <Route path="/favorites" element={user ? <FavoritesPage /> : <Navigate to="/" />} />
                     <Route path="/mood" element={user ? <MoodSearchPage /> : <Navigate to="/" />} />
+                    <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/" />} />
                     <Route path="/admin" element={user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
                 </Routes>
             </div>
