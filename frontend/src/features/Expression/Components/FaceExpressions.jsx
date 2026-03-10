@@ -31,19 +31,25 @@ export default function FaceExpression({ onMoodChange }) {
 
         const setup = async () => {
             try {
-                await init({ landmarkerRef, videoRef, streamRef });
+                if (isRunning) setLiveMood("AWAITING CAMERA...");
+                await init({ landmarkerRef, videoRef, streamRef, setLiveMood });
                 if (isRunning) {
                     setIsReady(true);
                     loop(); // Start smooth continuous tracking
                 }
             } catch (err) {
                 console.error("Camera/AI Init Error:", err);
-                if (isRunning) setLiveMood("Camera access denied.");
+                if (isRunning) {
+                    if (err.name === "NotAllowedError") {
+                        setLiveMood("CAMERA BLOCKED IN BROWSER");
+                    } else {
+                        setLiveMood("INIT FAILED: " + (err.message ? err.message.substring(0, 20) : "Unknown"));
+                    }
+                }
             }
         };
 
-        // We no longer call setup() here. It will be called by handleStartCamera.
-        window.__startCamera = setup;
+        setup();
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && isRunning && isReady) {
@@ -90,15 +96,6 @@ export default function FaceExpression({ onMoodChange }) {
                 position: "relative",
                 overflow: "hidden"
             }}>
-                {!isReady && (
-                    <button
-                        onClick={() => window.__startCamera?.()}
-                        className="toolbar-btn"
-                        style={{ position: "absolute", zIndex: 10, padding: "12px 24px", color: "var(--clr-danger)", borderColor: "var(--clr-danger)" }}
-                    >
-                        [ START CAMERA ]
-                    </button>
-                )}
                 <video
                     ref={videoRef}
                     style={{
