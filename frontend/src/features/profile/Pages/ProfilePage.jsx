@@ -21,7 +21,7 @@ export default function ProfilePage() {
         <div className="min-h-screen bg-[#0a0a0a] text-[#f4f3ed] font-sans p-6 md:p-16 flex justify-center items-center">
             {/* Top Back/Home Button */}
             <button
-                onClick={() => navigate('/home')}
+                onClick={handleLogout}
                 className="absolute top-8 left-8 md:top-12 md:left-12 font-mono text-xs tracking-widest text-[#999] hover:text-[#f4f3ed] z-10 transition-colors uppercase flex items-center gap-2 border border-[#333] px-4 py-2 hover:border-[#f4f3ed]"
             >
                 ← BACK TO HOME
