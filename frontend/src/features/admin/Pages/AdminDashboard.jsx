@@ -118,7 +118,7 @@ export default function AdminDashboard() {
                             <h2 className="font-mono text-xs tracking-widest text-[#666] uppercase">{movies.length} MOVIES IN DATABASE</h2>
                             <button
                                 onClick={() => { setShowForm(true); setEditMovie(null); setForm({ title: "", poster: "", description: "", tmdbId: "", releaseDate: "", trailerUrl: "", genre: "", category: "movie", rating: "" }) }}
-                                className="bg-[#e63946] text-[#0a0a0a] px-4 py-2 font-mono text-xs tracking-widest uppercase font-bold hover:bg-[#f4f3ed] transition-colors"
+                                className="bg-[#e63946] text-white hover:text-red-500 px-4 py-2 font-mono text-xs tracking-widest uppercase font-bold hover:bg-[#f4f3ed] transition-colors"
                             >
                                 + ADD MOVIE
                             </button>
@@ -173,10 +173,10 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <div className="flex gap-3 mt-6">
-                                    <button onClick={handleSubmit} className="bg-[#e63946] text-[#0a0a0a] px-6 py-2 font-mono text-xs tracking-widest uppercase font-bold hover:bg-[#f4f3ed] transition-colors">
+                                    <button onClick={handleSubmit} className="bg-[#e63946] text-white hover:text-red-500 px-6 py-2 font-mono text-xs tracking-widest uppercase font-bold hover:bg-[#f4f3ed] transition-colors">
                                         {editMovie ? "UPDATE" : "CREATE"}
                                     </button>
-                                    <button onClick={() => { setShowForm(false); setEditMovie(null) }} className="border border-[#333] px-6 py-2 font-mono text-xs tracking-widest uppercase text-[#999] hover:border-[#f4f3ed] transition-colors">
+                                    <button onClick={() => { setShowForm(false); setEditMovie(null) }} className="border border-[#333] px-6 py-2 font-mono text-xs tracking-widest uppercase text-white hover:border-red-500 hover:text-red-500 transition-colors">
                                         CANCEL
                                     </button>
                                 </div>
