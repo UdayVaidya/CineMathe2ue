@@ -8,6 +8,28 @@ import {
     discoverMedia,
 } from "../services/movie.api"
 
+// ── Batched home fetch — all 3 requests fire in parallel ──────────────────
+export const fetchHomeData = createAsyncThunk(
+    "movies/homeData",
+    async (_, { rejectWithValue }) => {
+        try {
+            const [trending, popular, tvShows, movieGenres, tvGenres] = await Promise.all([
+                getTrendingMovies(),
+                getPopularMovies(),
+                getPopularTVShows(),
+                getMovieGenres(),
+                getTVGenres(),
+            ])
+            // Merge & dedupe genres by id
+            const genreMap = {}
+            ;[...movieGenres, ...tvGenres].forEach(g => { genreMap[g.id] = g })
+            return { trending, popular, tvShows, genres: Object.values(genreMap) }
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message)
+        }
+    }
+)
+
 export const fetchTrendingMovies = createAsyncThunk(
     "movies/trending",
     async (_, { rejectWithValue }) => {
@@ -105,6 +127,19 @@ const movieSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Batched home fetch
+            .addCase(fetchHomeData.pending, (state) => { state.trendingLoading = true; state.popularLoading = true; state.tvLoading = true })
+            .addCase(fetchHomeData.fulfilled, (state, action) => {
+                state.trendingLoading = false; state.popularLoading = false; state.tvLoading = false
+                state.trending = action.payload.trending
+                state.popular  = action.payload.popular
+                state.tvShows  = action.payload.tvShows
+                if (action.payload.genres?.length) {
+                    state.genres = action.payload.genres
+                }
+            })
+            .addCase(fetchHomeData.rejected, (state, action) => { state.trendingLoading = false; state.popularLoading = false; state.tvLoading = false; state.error = action.payload })
+
             // Trending
             .addCase(fetchTrendingMovies.pending, (state) => { state.trendingLoading = true })
             .addCase(fetchTrendingMovies.fulfilled, (state, action) => { state.trendingLoading = false; state.trending = action.payload })

@@ -7,19 +7,22 @@ const cache = new Map()
 export const fetchSearchResults = createAsyncThunk(
   "search/fetch",
   async (query, { rejectWithValue, signal }) => {
-    // Cache hit → instant return, no network call
     const key = query.toLowerCase().trim()
+
+    // Cache hit → return instantly, mark fromCache so reducer skips loading state
     if (cache.has(key)) {
       return { results: cache.get(key), fromCache: true }
     }
 
     try {
+      // Pass the Redux thunk's AbortSignal so in-flight requests are cancelled
+      // when a newer keystroke fires
       const data = await searchMulti(query, 1, signal)
       const results = data.results || []
-      cache.set(key, results)  // store in cache
+      cache.set(key, results)
       return { results, fromCache: false }
     } catch (error) {
-      if (error.name === "CanceledError" || error.name === "AbortError") {
+      if (error.name === "CanceledError" || error.name === "AbortError" || error.code === "ERR_CANCELED") {
         return rejectWithValue("cancelled")
       }
       return rejectWithValue(error.message)
@@ -49,7 +52,10 @@ const searchSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchSearchResults.pending, (state, action) => {
-        // Don't show spinner for cache hits (they return immediately)
+        // Cache hits resolve nearly instantly — don't flash the spinner
+        // We check the cache key here to decide if we should show loading
+        const key = action.meta.arg?.toLowerCase().trim()
+        if (cache.has(key)) return  // skip loading state for cache hits
         state.loading = true
         state.error = null
       })

@@ -7,7 +7,10 @@ export default function usePopularMovies() {
     const { popular, popularLoading, error } = useSelector((state) => state.movies)
 
     useEffect(() => {
-        dispatch(fetchPopularMovies())
+        // Skip fetch if data is already cached in the store
+        if (popular.length === 0) {
+            dispatch(fetchPopularMovies())
+        }
     }, [dispatch])
 
     return { popular, loading: popularLoading, error }

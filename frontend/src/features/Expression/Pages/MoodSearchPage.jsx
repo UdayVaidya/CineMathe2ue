@@ -48,7 +48,7 @@ export default function MoodSearchPage() {
     return (
         <div className="homepage" style={{ minHeight: '100vh', padding: '20px' }}>
             <div className="homepage__toolbar" style={{ marginBottom: '20px' }}>
-                <button onClick={() => navigate('/home')} className="toolbar-btn">← BACK TO HOME</button>
+                <button onClick={() => navigate('/home')} className="toolbar-btn toolbar-btn--danger">← BACK TO HOME</button>
             </div>
 
             <div style={{ textAlign: "center", marginBottom: "40px", paddingTop: "20px" }}>
@@ -62,47 +62,39 @@ export default function MoodSearchPage() {
                         <FaceExpression onMoodChange={(detectedMood) => setMood(detectedMood)} />
                     </div>
 
-                    <div style={{ background: 'var(--surface-color)', padding: '32px', border: '2px solid var(--border-color)', boxShadow: '8px 8px 0px rgba(0,0,0,0.8)', textAlign: 'left', minWidth: '340px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', letterSpacing: '3px', color: 'var(--muted-color)', marginBottom: '10px', borderBottom: '2px dotted var(--border-color)', paddingBottom: '12px', textTransform: 'uppercase' }}>
+                    <div style={{ background: 'var(--surface-color)', padding: '32px', border: '2px solid var(--border-color)', boxShadow: '8px 8px 0px rgba(0,0,0,0.8)', textAlign: 'left', minWidth: '340px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', letterSpacing: '3px', color: 'var(--muted-color)', borderBottom: '2px dotted var(--border-color)', paddingBottom: '12px', textTransform: 'uppercase', margin: 0 }}>
                             TARGET SIGNATURES
                         </h3>
 
-                        <div style={{ padding: '16px', border: '1px solid var(--border-color)', background: '#111', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <span style={{ fontSize: '32px' }}>😄</span>
-                            <div>
-                                <div style={{ fontWeight: 'bold', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Happy</div>
-                                <div style={{ fontSize: '11px', color: 'var(--clr-danger)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>Feel-good Family Comedies</div>
-                                <div style={{ fontSize: '11px', color: 'var(--muted-color)', marginTop: '4px', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>Tip: Smile widely showing teeth.</div>
-                            </div>
-                        </div>
+                        {/* 2×2 grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
 
-                        <div style={{ padding: '16px', border: '1px solid var(--border-color)', background: '#111', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <span style={{ fontSize: '32px' }}>😲</span>
-                            <div>
-                                <div style={{ fontWeight: 'bold', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Surprised</div>
-                                <div style={{ fontSize: '11px', color: 'var(--clr-danger)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>Twisty Mystery & Thrillers</div>
-                                <div style={{ fontSize: '11px', color: 'var(--muted-color)', marginTop: '4px', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>Tip: Drop your jaw & raise brows.</div>
-                            </div>
-                        </div>
+                            {[
+                                { emoji: '😄', mood: 'Happy',     genre: 'Feel-good Comedies',       tip: 'Smile widely, show teeth.' },
+                                { emoji: '😲', mood: 'Surprised', genre: 'Mystery & Thrillers',       tip: 'Drop jaw, raise brows.' },
+                                { emoji: '😢', mood: 'Sad',       genre: 'Romantic Dramas',           tip: 'Pull down lips hard.' },
+                                { emoji: '😜', mood: 'Naughty',   genre: 'Edgy Action Comedies',      tip: 'Wink heavily.' },
+                            ].map(({ emoji, mood, genre, tip }) => (
+                                <div key={mood} style={{
+                                    padding: '18px 14px',
+                                    border: '1px solid var(--border-color)',
+                                    background: '#0e0e0e',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    textAlign: 'center',
+                                    transition: 'border-color 0.2s, background 0.2s',
+                                }}>
+                                    <span style={{ fontSize: '40px', lineHeight: 1 }}>{emoji}</span>
+                                    <div style={{ fontWeight: 'bold', fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase' }}>{mood}</div>
+                                    <div style={{ fontSize: '10px', color: 'var(--clr-danger)', fontFamily: 'var(--font-mono)', lineHeight: 1.4 }}>{genre}</div>
+                                    <div style={{ fontSize: '10px', color: '#555', fontStyle: 'italic', fontFamily: 'var(--font-sans)', lineHeight: 1.4 }}>{tip}</div>
+                                </div>
+                            ))}
 
-                        <div style={{ padding: '16px', border: '1px solid var(--border-color)', background: '#111', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <span style={{ fontSize: '32px' }}>😢</span>
-                            <div>
-                                <div style={{ fontWeight: 'bold', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sad</div>
-                                <div style={{ fontSize: '11px', color: 'var(--clr-danger)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>Emotional Romantic Dramas</div>
-                                <div style={{ fontSize: '11px', color: 'var(--muted-color)', marginTop: '4px', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>Tip: Pull down lips (frown) hard.</div>
-                            </div>
                         </div>
-
-                        <div style={{ padding: '16px', border: '1px solid var(--border-color)', background: '#111', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <span style={{ fontSize: '32px' }}>😜</span>
-                            <div>
-                                <div style={{ fontWeight: 'bold', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Naughty</div>
-                                <div style={{ fontSize: '11px', color: 'var(--clr-danger)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>Edgy Action Comedies</div>
-                                <div style={{ fontSize: '11px', color: 'var(--muted-color)', marginTop: '4px', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>Tip: Wink heavily with one eye.</div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             </div>

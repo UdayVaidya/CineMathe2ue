@@ -7,7 +7,10 @@ export default function useTrendingMovies() {
     const { trending, trendingLoading, error } = useSelector((state) => state.movies)
 
     useEffect(() => {
-        dispatch(fetchTrendingMovies())
+        // Skip fetch if data is already cached in the store
+        if (trending.length === 0) {
+            dispatch(fetchTrendingMovies())
+        }
     }, [dispatch])
 
     return { trending, loading: trendingLoading, error }

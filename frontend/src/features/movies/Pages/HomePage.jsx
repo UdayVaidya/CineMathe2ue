@@ -1,14 +1,11 @@
-import useTrendingMovies from "../hooks/useTrendingMovies"
-import usePopularMovies from "../hooks/usePopularMovies"
-import useTVShows from "../hooks/useTVShows"
+import { useSelector, useDispatch } from "react-redux"
+import { fetchHomeData, fetchGenres } from "../store/movieSlice"
 import useInfiniteDiscover from "../hooks/useInfiniteDiscover"
 import MovieGrid from "../components/MovieGrid"
 import FeaturedCarousel from "../components/FeaturedCarousel"
 import HeroArchive from "../components/HeroArchive"
 import FilterBar from "../components/FilterBar"
 import { SkeletonGrid } from "../components/SkeletonCard"
-import { useDispatch } from "react-redux"
-import { fetchGenres } from "../store/movieSlice"
 import { logout } from "../../auth/store/authSlice"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useCallback } from "react"
@@ -83,11 +80,20 @@ function TMDBErrorBanner({ diagnosis, onRetry }) {
 }
 
 export default function HomePage() {
-    const { trending, loading: trendingLoading, error: trendingError } = useTrendingMovies()
-    const { popular, loading: popularLoading } = usePopularMovies()
-    const { tvShows } = useTVShows()
     const dispatch = useDispatch()
     const navigate = useNavigate()
+
+    // Read all home data from Redux in one selector hit
+    const { trending, trendingLoading, popular, popularLoading, tvShows, error: trendingError } = useSelector(
+        (s) => ({
+            trending:       s.movies.trending,
+            trendingLoading: s.movies.trendingLoading,
+            popular:        s.movies.popular,
+            popularLoading: s.movies.popularLoading,
+            tvShows:        s.movies.tvShows,
+            error:          s.movies.error,
+        })
+    )
     const [activeSection, setActiveSection] = useState("trending")
     const [diagnosis, setDiagnosis] = useState(null)
     const [diagnosing, setDiagnosing] = useState(false)
@@ -105,7 +111,10 @@ export default function HomePage() {
 
     const isLoading = trendingLoading || popularLoading
 
-    useEffect(() => { dispatch(fetchGenres()) }, [dispatch])
+    useEffect(() => {
+        // One batched fetch for all 3 home datasets — fires only if data not cached
+        if (trending.length === 0) dispatch(fetchHomeData())
+    }, [dispatch])
 
     useEffect(() => {
         if (!trendingError || diagnosing || diagnosis) return

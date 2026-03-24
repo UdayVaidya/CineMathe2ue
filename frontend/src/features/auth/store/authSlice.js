@@ -36,7 +36,8 @@ const authSlice = createSlice({
     user: JSON.parse(localStorage.getItem("cs_user")) || null,
     token: localStorage.getItem("cs_token") || null,
     loading: false,
-    error: null
+    error: null,
+    registrationSuccess: false,
   },
 
   reducers: {
@@ -45,6 +46,12 @@ const authSlice = createSlice({
       state.token = null
       localStorage.removeItem("cs_token")
       localStorage.removeItem("cs_user")
+    },
+    clearError: (state) => {
+      state.error = null
+    },
+    clearRegistrationSuccess: (state) => {
+      state.registrationSuccess = false
     }
   },
 
@@ -69,12 +76,11 @@ const authSlice = createSlice({
       .addCase(registerUser.pending, (state) => {
         state.loading = true
       })
-      .addCase(registerUser.fulfilled, (state, action) => {
+      .addCase(registerUser.fulfilled, (state) => {
+        // Don't auto-login — just flag success so the UI redirects to login
         state.loading = false
-        state.user = action.payload.user
-        state.token = action.payload.token
-        localStorage.setItem("cs_token", action.payload.token)
-        localStorage.setItem("cs_user", JSON.stringify(action.payload.user))
+        state.error = null
+        state.registrationSuccess = true
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false
@@ -83,6 +89,6 @@ const authSlice = createSlice({
   }
 })
 
-export const { logout } = authSlice.actions
+export const { logout, clearError, clearRegistrationSuccess } = authSlice.actions
 
 export default authSlice.reducer

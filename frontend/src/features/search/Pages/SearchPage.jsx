@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import { fetchSearchResults, clearSearch } from "../store/searchSlice"
+import { fetchSearchResults, clearSearch, setQuery } from "../store/searchSlice"
 import useDebounce from "../../../shared/hooks/useDebounce"
 
 const TYPE_COLORS = {
@@ -88,7 +88,7 @@ export default function SearchPage() {
   const inputRef = useRef(null)
   const { results, loading, query, fromCache } = useSelector(s => s.search)
   const [inputValue, setInputValue] = useState(query || "") // restore on back nav
-  const debouncedQuery = useDebounce(inputValue, 300)
+  const debouncedQuery = useDebounce(inputValue, 400)
 
   // Auto-focus on mount
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -97,6 +97,7 @@ export default function SearchPage() {
   useEffect(() => {
     const q = debouncedQuery.trim()
     if (q.length >= 2) {
+      dispatch(setQuery(q))        // persist query for back-nav restore
       dispatch(fetchSearchResults(q))
     } else if (q.length === 0) {
       dispatch(clearSearch())

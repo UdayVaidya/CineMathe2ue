@@ -1,84 +1,88 @@
 import { useEffect, useRef, useState } from "react";
-import { init, detect } from "../Utils/utils";
+import { init, detect, stopCamera } from "../Utils/utils";
 
 export default function FaceExpression({ onMoodChange }) {
-    const videoRef = useRef(null);
+    const videoRef      = useRef(null);
     const landmarkerRef = useRef(null);
-    const animationRef = useRef(null);
-    const streamRef = useRef(null);
+    const animationRef  = useRef(null);
+    const streamRef     = useRef(null);
+    const isRunningRef  = useRef(false);   // ref so closures always see latest value
+    const isReadyRef    = useRef(false);
 
     const [liveMood, setLiveMood] = useState("Initializing...");
-    const [isReady, setIsReady] = useState(false);
+    const [isReady,  setIsReady]  = useState(false);
 
     useEffect(() => {
-        let isRunning = true;
+        isRunningRef.current = true;
+        isReadyRef.current   = false;
 
         const loop = (timestamp) => {
-            if (!isRunning) return;
+            if (!isRunningRef.current) return;
             try {
                 if (videoRef.current && videoRef.current.paused) {
-                    videoRef.current.play().catch(() => { });
+                    videoRef.current.play().catch(() => {});
                 }
                 const mood = detect(landmarkerRef, videoRef, timestamp);
-                if (mood) {
-                    setLiveMood(mood);
-                }
-            } catch (e) {
-                // Ignore transient frame errors on tab switch
+                if (mood) setLiveMood(mood);
+            } catch (_) {
+                // Ignore transient frame errors
             }
             animationRef.current = requestAnimationFrame(loop);
         };
 
         const setup = async () => {
             try {
-                if (isRunning) setLiveMood("AWAITING CAMERA...");
+                if (isRunningRef.current) setLiveMood("AWAITING CAMERA...");
                 await init({ landmarkerRef, videoRef, streamRef, setLiveMood });
-                if (isRunning) {
+                if (isRunningRef.current) {
+                    isReadyRef.current = true;
                     setIsReady(true);
-                    loop(); // Start smooth continuous tracking
+                    loop();
                 }
             } catch (err) {
                 console.error("Camera/AI Init Error:", err);
-                if (isRunning) {
-                    if (err.name === "NotAllowedError") {
-                        setLiveMood("CAMERA BLOCKED IN BROWSER");
-                    } else {
-                        setLiveMood("INIT FAILED: " + (err.message ? err.message.substring(0, 20) : "Unknown"));
-                    }
+                if (isRunningRef.current) {
+                    setLiveMood(
+                        err.name === "NotAllowedError"
+                            ? "CAMERA BLOCKED IN BROWSER"
+                            : "INIT FAILED: " + (err.message?.substring(0, 20) ?? "Unknown")
+                    );
                 }
             }
         };
 
         setup();
 
+        // Re-init if the OS killed the camera track while window was in background
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible' && isRunning && isReady) {
-                if (videoRef.current && videoRef.current.paused) {
-                    videoRef.current.play().catch(() => { });
+            if (
+                document.visibilityState === "visible" &&
+                isRunningRef.current &&
+                isReadyRef.current
+            ) {
+                if (videoRef.current?.paused) {
+                    videoRef.current.play().catch(() => {});
                 }
                 const track = streamRef.current?.getTracks()[0];
-                // If track was killed by OS when tab was in background, re-init.
-                if (track && track.readyState === 'ended') {
+                if (track && track.readyState === "ended") {
                     setup();
                 }
             }
         };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
+        // ── Cleanup: runs when route changes away from /mood ─────────────────
         return () => {
-            isRunning = false;
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            if (animationRef.current) cancelAnimationFrame(animationRef.current);
-            if (landmarkerRef.current) landmarkerRef.current.close();
-            if (videoRef.current?.srcObject) {
-                videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-            }
+            isRunningRef.current = false;
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            stopCamera({ landmarkerRef, videoRef, streamRef, animationRef });
+            setIsReady(false);
+            setLiveMood("Initializing...");
         };
     }, []);
 
     const handleDetectClick = () => {
-        if (!isReady || liveMood.includes("Initializing")) return;
-        // Pass the locked-in mood to the parent
+        if (!isReadyRef.current || liveMood.includes("Initializing")) return;
         onMoodChange(liveMood);
     };
 
@@ -103,13 +107,14 @@ export default function FaceExpression({ onMoodChange }) {
                         height: "100%",
                         objectFit: "cover",
                         backgroundColor: "#000",
-                        transform: "scaleX(-1)", // Mirror the camera so it looks natural
+                        transform: "scaleX(-1)",
                         opacity: isReady ? 1 : 0.5
                     }}
                     playsInline
                     muted
                 />
             </div>
+
             <div style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "14px",
@@ -126,7 +131,8 @@ export default function FaceExpression({ onMoodChange }) {
             }}>
                 {isReady ? (
                     <>
-                        [ <span className="animate-pulse" style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: 'var(--clr-danger)', borderRadius: '50%', boxShadow: '0 0 8px var(--clr-danger)' }}></span> LIVE: {liveMood.toUpperCase()} ]
+                        [<span className="animate-pulse" style={{ display: "inline-block", width: "10px", height: "10px", backgroundColor: "var(--clr-danger)", borderRadius: "50%", boxShadow: "0 0 8px var(--clr-danger)" }} />
+                        {" "}LIVE: {liveMood.toUpperCase()} ]
                     </>
                 ) : `[ ${liveMood.toUpperCase()} ]`}
             </div>

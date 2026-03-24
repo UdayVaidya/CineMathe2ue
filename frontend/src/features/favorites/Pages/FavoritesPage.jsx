@@ -10,7 +10,8 @@ export default function FavoritesPage() {
     const { favorites, loading, error } = useSelector((state) => state.favorites)
 
     useEffect(() => {
-        dispatch(fetchFavorites())
+        // Data is pre-fetched on login by AppRoutes — only re-fetch if empty
+        if (favorites.length === 0) dispatch(fetchFavorites())
     }, [dispatch])
 
     // ── Loading ──────────────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ export default function FavoritesPage() {
             {/* Back */}
             <button
                 onClick={() => navigate(-1)}
-                className="font-mono text-xs tracking-widest text-[#999] hover:text-[#f4f3ed] transition-colors mb-10 block"
+                className="font-mono text-sm tracking-widest text-[#999] hover:text-red-500 transition-colors mb-10 block"
             >
                 ← BACK
             </button>

@@ -1,10 +1,13 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { useDispatch } from "react-redux";
 import useAuth from "../hooks/useAuth"
+import { clearError } from "../store/authSlice"
 
 const LoginForm = () => {
-
+    const dispatch = useDispatch()
     const { login, loading, error } = useAuth()
+    const clearErr = () => { if (error) dispatch(clearError()) }
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -31,27 +34,29 @@ const LoginForm = () => {
                     type="email"
                     required
                     className="w-full bg-transparent border-b border-[#333] text-[#f4f3ed] py-3 focus:outline-none focus:border-[#e63946] focus:bg-[#141414] transition-all font-sans text-sm rounded-none"
-                    placeholder="Enter assigned email"
+                    placeholder="Enter your email"
                     name="email"
+                    onChange={clearErr}
                 />
             </div>
 
             <div className="flex flex-col gap-2">
                 <label className="font-mono text-[10px] sm:text-xs tracking-[0.2em] text-[#e63946] uppercase font-bold">
-                    Security Passkey
+                    Password
                 </label>
                 <input
                     type="password"
                     required
                     className="w-full bg-transparent border-b border-[#333] text-[#f4f3ed] py-3 focus:outline-none focus:border-[#e63946] focus:bg-[#141414] transition-all font-sans text-sm rounded-none"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     name="password"
+                    onChange={clearErr}
                 />
             </div>
 
             <div className="flex flex-col gap-2 relative">
                 <label className="font-mono text-[10px] sm:text-xs tracking-[0.2em] text-[#e63946] uppercase font-bold">
-                    Clearance Level
+                    Role
                 </label>
                 <select
                     required
@@ -59,20 +64,41 @@ const LoginForm = () => {
                     defaultValue="user"
                     name="role"
                 >
-                    <option value="user" className="bg-[#0a0a0a] text-[#f4f3ed]">Standard Operator</option>
+                    <option value="user" className="bg-[#0a0a0a] text-[#f4f3ed]">System User</option>
                     <option value="admin" className="bg-[#0a0a0a] text-[#e63946]">System Administrator</option>
                 </select>
-                <div className="absolute right-0 bottom-4 pointer-events-none text-[#666] pr-2 font-xs">
-                    ▼
-                </div>
+                <div className="absolute right-0 bottom-4 pointer-events-none text-[#666] pr-2 font-xs">▼</div>
             </div>
+
+            {/* Error message */}
+            <AnimatePresence>
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.25 }}
+                        className="flex items-start gap-3 bg-[#1a0a0b] border border-[#e63946]/40 px-4 py-3"
+                    >
+                        <span className="text-[#e63946] text-base leading-none mt-0.5">⚠</span>
+                        <p className="font-mono text-[11px] text-[#e63946] tracking-wide leading-snug">{error}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <button
                 type="submit"
                 disabled={loading}
-                className="mt-6 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-white font-mono text-xs tracking-[0.2em] font-bold uppercase transition-all duration-300 rounded-none hover:shadow-[0_0_18px_rgba(230,57,70,0.75)] disabled:opacity-50"
+                className="mt-2 w-full py-4 bg-[#e63946] hover:bg-[#b82d38] text-white font-mono text-xs tracking-[0.2em] font-bold uppercase transition-all duration-300 rounded-none hover:shadow-[0_0_18px_rgba(230,57,70,0.75)] disabled:opacity-60 flex items-center justify-center gap-3"
             >
-                {loading ? "Authorizing..." : "Authorize Access"}
+                {loading ? (
+                    <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Authorizing...
+                    </>
+                ) : (
+                    "Authorize"
+                )}
             </button>
         </motion.form>
     );

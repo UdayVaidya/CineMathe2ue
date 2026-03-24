@@ -7,7 +7,10 @@ export default function useTVShows() {
     const { tvShows, tvLoading, error } = useSelector((state) => state.movies)
 
     useEffect(() => {
-        dispatch(fetchPopularTVShows())
+        // Skip fetch if data is already cached in the store
+        if (tvShows.length === 0) {
+            dispatch(fetchPopularTVShows())
+        }
     }, [dispatch])
 
     return { tvShows, loading: tvLoading, error }

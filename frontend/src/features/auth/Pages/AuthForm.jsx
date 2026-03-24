@@ -2,10 +2,32 @@ import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useDispatch, useSelector } from "react-redux";
+import { clearError, clearRegistrationSuccess } from "../store/authSlice";
 import gsap from "gsap";
 
 const AuthForm = () => {
     const [isLogin, setIsLogin] = useState(true);
+    const [successMsg, setSuccessMsg] = useState("");
+    const dispatch = useDispatch();
+    const registrationSuccess = useSelector(s => s.auth.registrationSuccess);
+
+    // When registration succeeds — switch to login tab and show success banner
+    useEffect(() => {
+        if (!registrationSuccess) return
+        dispatch(clearError())
+        dispatch(clearRegistrationSuccess())
+        setIsLogin(true)
+        setSuccessMsg("Account created! Please sign in.")
+        const t = setTimeout(() => setSuccessMsg(""), 5000)
+        return () => clearTimeout(t)
+    }, [registrationSuccess, dispatch])
+
+    const handleToggle = () => {
+        dispatch(clearError())
+        setSuccessMsg("")
+        setIsLogin(v => !v)
+    }
 
     const leftRef = useRef(null);
     const rightRef = useRef(null);
@@ -97,6 +119,20 @@ const AuthForm = () => {
                         </p>
                     </div>
 
+                    <AnimatePresence>
+                        {successMsg && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mb-6 flex items-start gap-3 bg-[#0a1a0b] border border-[#38b000]/40 px-4 py-3"
+                            >
+                                <span className="text-[#38b000] text-base leading-none mt-0.5">✓</span>
+                                <p className="font-mono text-[11px] text-[#38b000] tracking-wide leading-snug">{successMsg}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <div className="min-h-[280px]">
                         <AnimatePresence mode="wait">
                             <motion.div
@@ -117,7 +153,7 @@ const AuthForm = () => {
                         </p>
 
                         <button
-                            onClick={() => setIsLogin(!isLogin)}
+                         onClick={handleToggle}
                             className="font-mono text-xs tracking-[0.2em] text-[#f4f3ed] hover:text-[#e63946] border-b border-transparent hover:border-[#e63946] pb-1 transition-all uppercase"
                         >
                             {isLogin ? "Request One" : "Return to Auth"}

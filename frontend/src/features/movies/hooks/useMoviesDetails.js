@@ -4,56 +4,77 @@ import {
   getTVBasic, getTVCredits, getTVVideos,
 } from "../services/movie.api"
 
+// ── Client-side session cache — survives route changes, cleared on page refresh
+// Key: `${type}:${id}:basic|credits|videos`
+const detailCache = new Map()
+
+function cacheKey(type, id, part) { return `${type}:${id}:${part}` }
+function fromCache(type, id, part) { return detailCache.get(cacheKey(type, id, part)) || null }
+function toCache(type, id, part, data) { detailCache.set(cacheKey(type, id, part), data) }
+
 /**
- * Two-phase fetch:
- *   Phase 1 — basic movie info (fast), renders the page skeleton immediately
- *   Phase 2 — credits + videos fired in parallel, streams in when ready
- *
- * This way the user sees the poster, title, overview, genres in ~300-500ms
- * instead of waiting for credits (~800-1200ms extra) before anything shows.
+ * Fetch strategy:
+ * - Cache hit  → return instantly, no network call, no loading states
+ * - Cache miss → fire all 3 requests in parallel (basic + credits + videos)
+ *   Basic info populates immediately, credits/videos stream in after
  */
 export default function useMovieDetails(id, type = "movie") {
-  const [movie, setMovie] = useState(null)
-  const [credits, setCredits] = useState(null)  // separate state — arrives later
-  const [videos, setVideos] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [movie,          setMovie]          = useState(null)
+  const [credits,        setCredits]        = useState(null)
+  const [videos,         setVideos]         = useState(null)
+  const [loading,        setLoading]        = useState(true)
   const [creditsLoading, setCreditsLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error,          setError]          = useState(null)
 
   useEffect(() => {
     if (!id) return
-
     let cancelled = false
 
-    const fetchBasic = type === "tv" ? getTVBasic : getMovieBasic
-    const fetchCredits = type === "tv" ? getTVCredits : getMovieCredits
-    const fetchVideos = type === "tv" ? getTVVideos : getMovieVideos
+    const fetchBasic   = type === "tv" ? getTVBasic    : getMovieBasic
+    const fetchCredits = type === "tv" ? getTVCredits  : getMovieCredits
+    const fetchVideos  = type === "tv" ? getTVVideos   : getMovieVideos
 
-    // Reset state on id/type change
-    setMovie(null)
-    setCredits(null)
-    setVideos(null)
-    setLoading(true)
-    setCreditsLoading(true)
-    setError(null)
+    // ── Check cache first ───────────────────────────────────────────────────
+    const cachedBasic   = fromCache(type, id, "basic")
+    const cachedCredits = fromCache(type, id, "credits")
+    const cachedVideos  = fromCache(type, id, "videos")
 
-    // ── Phase 1: Basic info — renders page immediately
+    if (cachedBasic) {
+      // Everything already cached — render instantly, skip all loading states
+      setMovie(cachedBasic)
+      setCredits(cachedCredits)
+      setVideos(cachedVideos)
+      setLoading(false)
+      setCreditsLoading(!cachedCredits && !cachedVideos ? false : false)
+      setError(null)
+      return
+    }
+
+    // ── Fresh fetch — reset state ───────────────────────────────────────────
+    setMovie(null); setCredits(null); setVideos(null)
+    setLoading(true); setCreditsLoading(true); setError(null)
+
+    // Fire all 3 in parallel — basic resolves fast and unlocks the page,
+    // credits/videos arrive slightly after
     fetchBasic(id)
       .then(data => {
-        if (!cancelled) { setMovie(data); setLoading(false) }
+        if (cancelled) return
+        toCache(type, id, "basic", data)
+        setMovie(data)
+        setLoading(false)
       })
       .catch(err => {
         if (!cancelled) { setError(err.message); setLoading(false) }
       })
 
-    // ── Phase 2: Credits + videos in parallel — streams in after
     Promise.all([fetchCredits(id), fetchVideos(id)])
       .then(([c, v]) => {
-        if (!cancelled) {
-          setCredits(c)
-          setVideos(v)
-          setCreditsLoading(false)
-        }
+        if (cancelled) return
+        toCache(type, id, "credits", c)
+        toCache(type, id, "videos",  v)
+        setCredits(c)
+        setVideos(v)
+        setCreditsLoading(false)
       })
       .catch(() => {
         if (!cancelled) setCreditsLoading(false)
@@ -62,12 +83,6 @@ export default function useMovieDetails(id, type = "movie") {
     return () => { cancelled = true }
   }, [id, type])
 
-  // Merge into single movie object for backward compat with the page component
-  const merged = movie ? {
-    ...movie,
-    credits: credits || null,
-    videos: videos || null,
-  } : null
-
+  const merged = movie ? { ...movie, credits: credits || null, videos: videos || null } : null
   return { movie: merged, loading, creditsLoading, error }
 }

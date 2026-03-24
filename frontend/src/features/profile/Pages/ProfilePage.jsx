@@ -1,4 +1,3 @@
-import React from 'react';
 import useAuth from '../../auth/hooks/useAuth';
 import { User, Mail, Shield, Film, LogOut } from 'lucide-react';
 import { useDispatch } from 'react-redux';
@@ -15,14 +14,18 @@ export default function ProfilePage() {
         navigate('/login');
     };
 
+    const handleBackToHome = () => {
+        navigate('/home');
+    };
+
     if (!user) return null;
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-[#f4f3ed] font-sans p-6 md:p-16 flex justify-center items-center">
             {/* Top Back/Home Button */}
             <button
-                onClick={handleLogout}
-                className="absolute top-8 left-8 md:top-12 md:left-12 font-mono text-xs tracking-widest text-[#999] hover:text-[#f4f3ed] z-10 transition-colors uppercase flex items-center gap-2 border border-[#333] px-4 py-2 hover:border-[#f4f3ed]"
+                onClick={handleBackToHome}
+                className="absolute top-8 left-8 md:top-12 md:left-20 font-mono text-xs tracking-widest text-[#999] hover:text-red-500 z-10 transition-colors uppercase flex items-center gap-2 border border-[#333] px-4 py-2 hover:border-[#f4f3ed]"
             >
                 ← BACK TO HOME
             </button>
@@ -92,7 +95,7 @@ export default function ProfilePage() {
                     <div className="mt-12 flex gap-4 md:justify-end relative z-10">
                         <button
                             onClick={handleLogout}
-                            className="w-full md:w-auto border-2 border-[#333] bg-[#0a0a0a] hover:border-[#e63946] hover:bg-[#e63946] text-[#999] hover:text-[#000] px-8 py-3 flex items-center justify-center gap-3 font-mono text-xs md:text-sm tracking-[0.2em] uppercase transition-all font-bold"
+                            className="w-full md:w-auto border-2 border-[#333] bg-[#0a0a0a] hover:border-[#e63946] hover:bg-[#e63946] text-red-500 hover:text-white px-8 py-3 flex items-center justify-center gap-3 font-mono text-xs md:text-sm tracking-[0.2em] uppercase transition-all font-bold"
                         >
                             <LogOut size={16} />
                             Log Out
