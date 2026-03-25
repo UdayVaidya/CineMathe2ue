@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { fetchSearchResults, clearSearch, setQuery } from "../store/searchSlice"
 import useDebounce from "../../../shared/hooks/useDebounce"
+import { toggleFavorite, selectIsFavorite, selectToggleLoading } from "../../favorites/store/favoritesSlice"
 
 const TYPE_COLORS = {
   movie: { color: "#e63946", label: "FILM" },
@@ -31,6 +32,11 @@ const SearchCard = memo(function SearchCard({ item, onClick, index }) {
   const type = item.media_type || "movie"
   const badge = TYPE_COLORS[type] || TYPE_COLORS.movie
   const rating = item.vote_average?.toFixed(1)
+  
+  const dispatch = useDispatch()
+  const tmdbId = item.id
+  const isFav = useSelector(selectIsFavorite(tmdbId))
+  const isLoading = useSelector(selectToggleLoading(tmdbId))
 
   // w342 — smaller, faster than w500
   const image = item.poster_path
@@ -40,6 +46,18 @@ const SearchCard = memo(function SearchCard({ item, onClick, index }) {
       : null
 
   const isClickable = type !== "person"
+
+  const handleFavClick = useCallback((e) => {
+    e.stopPropagation()
+    if (isLoading) return
+    const mediaType = item.media_type || (item.first_air_date ? "tv" : "movie")
+    dispatch(toggleFavorite({
+      tmdbId,
+      title,
+      poster: image || "",
+      mediaType,
+    }))
+  }, [dispatch, isLoading, tmdbId, title, image, item])
 
   return (
     <div
@@ -68,6 +86,24 @@ const SearchCard = memo(function SearchCard({ item, onClick, index }) {
         <div className="search-card__badge" style={{ color: badge.color, borderColor: badge.color }}>
           {badge.label}
         </div>
+
+        {/* Fav Button */}
+        {isClickable && (
+          <button
+            onClick={handleFavClick}
+            disabled={isLoading}
+            className={`movie-card__fav ${isFav ? "movie-card__fav--active" : ""}`}
+            title={isFav ? "Remove from Favourites" : "Add to Favourites"}
+          >
+            {isLoading ? (
+                <span className="movie-card__fav-spinner" />
+            ) : (
+                <svg viewBox="0 0 24 24" fill={isFav ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2}>
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+            )}
+          </button>
+        )}
       </div>
       <div className="search-card__info">
         <p className="search-card__title">{title}</p>

@@ -1,6 +1,8 @@
-import { useState, memo } from "react"
+import { useState, useEffect, memo } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import useMovieDetails from "../hooks/useMoviesDetails"
+import useHistory from "../../history/hooks/useHistory"
+import useFavorite from "../../favorites/hooks/useFavorite"
 
 // ── Cast skeleton — shown while credits are loading
 function CastSkeleton() {
@@ -77,6 +79,15 @@ export default function MoviesDetailPage() {
 
     const { movie, loading, creditsLoading, error } = useMovieDetails(id, type)
     const [showTrailer, setShowTrailer] = useState(false)
+    const { handleAddToHistory } = useHistory()
+    const { isFav } = useFavorite(movie)
+
+
+    useEffect(() => {
+        if (movie && !loading && !error) {
+            handleAddToHistory({ ...movie, media_type: type })
+        }
+    }, [movie?.id, loading, error])
 
     if (loading) return <PageSkeleton />
 
@@ -123,6 +134,15 @@ export default function MoviesDetailPage() {
                 </button>
             </div>
 
+            {/* Favorite label */}
+            {isFav && (
+                <div className="detail-favorite">
+                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={3}>
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    ADDED AS FAVOURITE
+                </div>
+            )}
             {/* Main layout */}
             <div className="detail-main">
 

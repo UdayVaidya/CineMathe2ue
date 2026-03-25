@@ -10,13 +10,13 @@ import AuthForm from "../features/auth/Pages/AuthForm"
 
 // ── Lazy load everything else — these bundles are only fetched when the route is visited
 const HomePage = lazy(() => import("../features/movies/Pages/HomePage"))
-const TmdbDashboard = lazy(() => import("../features/tmdbDashboard/Pages/TmdbDashboard"))
 const MoviesDetailPage = lazy(() => import("../features/movies/Pages/MoviesDetailPage"))
 const SearchPage = lazy(() => import("../features/search/Pages/SearchPage"))
 const AdminDashboard = lazy(() => import("../features/admin/Pages/AdminDashboard"))
 const FavoritesPage = lazy(() => import("../features/favorites/Pages/FavoritesPage"))
 const MoodSearchPage = lazy(() => import("../features/Expression/Pages/MoodSearchPage"))
 const ProfilePage = lazy(() => import("../features/profile/Pages/ProfilePage"))
+const HistoryPage = lazy(() => import("../features/history/Pages/HistoryPage"))
 
 // Minimal fallback — avoids flash of unstyled content
 function PageShell() {
@@ -56,13 +56,13 @@ const AppRoutes = () => {
                 <Routes>
                     <Route path="/" element={!user ? <AuthForm /> : <Navigate to={homeRedirect} />} />
                     <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" />} />
-                    <Route path="/tmdb" element={user ? <TmdbDashboard /> : <Navigate to="/" />} />
                     <Route path="/search" element={user ? <SearchPage /> : <Navigate to="/" />} />
                     <Route path="/movie/:id" element={user ? <MoviesDetailPage /> : <Navigate to="/" />} />
                     <Route path="/tv/:id" element={user ? <MoviesDetailPage /> : <Navigate to="/" />} />
                     <Route path="/favorites" element={user ? <FavoritesPage /> : <Navigate to="/" />} />
                     <Route path="/mood" element={user ? <MoodSearchPage /> : <Navigate to="/" />} />
                     <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/" />} />
+                    <Route path="/history" element={user ? <HistoryPage /> : <Navigate to="/" />} />
                     <Route path="/admin" element={user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />} />
                 </Routes>
             </div>

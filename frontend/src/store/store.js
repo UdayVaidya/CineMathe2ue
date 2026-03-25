@@ -4,6 +4,7 @@ import authReducer from "../features/auth/store/authSlice"
 import movieReducer from "../features/movies/store/movieSlice"
 import searchReducer from "../features/search/store/searchSlice"
 import favoritesReducer from "../features/favorites/store/favoritesSlice"
+import historyReducer from "../features/history/store/historySlice"
 
 export const store = configureStore({
   reducer: {
@@ -11,5 +12,6 @@ export const store = configureStore({
     movies: movieReducer,
     search: searchReducer,
     favorites: favoritesReducer,
+    history: historyReducer,
   },
 })

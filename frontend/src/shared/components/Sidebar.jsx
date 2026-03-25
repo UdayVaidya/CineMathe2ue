@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { User, Search, Heart, Smile, LogOut } from 'lucide-react';
+import { User, Search, Heart, Smile, LogOut, Clock } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../features/auth/store/authSlice.js';
 import Logo from './Logo.jsx';
@@ -57,6 +57,7 @@ export default function Sidebar() {
     const navItems = [
         { to: '/search',    icon: Search, label: 'Search',    desktopLabel: 'Search' },
         { to: '/mood',      icon: Smile,  label: 'Mood',      desktopLabel: 'Mood Scanner' },
+        { to: '/history',   icon: Clock,  label: 'History',   desktopLabel: 'Watch History' },
         { to: '/favorites', icon: Heart,  label: 'Saved',     desktopLabel: 'Favorites' },
     ];
 
